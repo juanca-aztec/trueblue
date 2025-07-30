@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tb_agents: {
         Row: {
           created_at: string
@@ -93,6 +123,7 @@ export type Database = {
           id: string
           instagram_message_id: string | null
           metadata: Json | null
+          responded_by_agent_id: string | null
           sender_role: Database["public"]["Enums"]["message_sender_role"]
         }
         Insert: {
@@ -102,6 +133,7 @@ export type Database = {
           id?: string
           instagram_message_id?: string | null
           metadata?: Json | null
+          responded_by_agent_id?: string | null
           sender_role: Database["public"]["Enums"]["message_sender_role"]
         }
         Update: {
@@ -111,6 +143,7 @@ export type Database = {
           id?: string
           instagram_message_id?: string | null
           metadata?: Json | null
+          responded_by_agent_id?: string | null
           sender_role?: Database["public"]["Enums"]["message_sender_role"]
         }
         Relationships: [
@@ -119,6 +152,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "tb_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tb_messages_responded_by_agent_id_fkey"
+            columns: ["responded_by_agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -152,9 +192,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
     }
     Enums: {
+      app_role: "admin" | "agent"
       conversation_status:
         | "active_ai"
         | "active_human"
@@ -288,6 +332,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "agent"],
       conversation_status: [
         "active_ai",
         "active_human",
