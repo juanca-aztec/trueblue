@@ -14,7 +14,7 @@ export function useConversations() {
         .from('tb_conversations')
         .select(`
           *,
-          assigned_agent:profiles!tb_conversations_assigned_agent_id_fkey(*)
+          assigned_agent:profiles(*)
         `)
         .order('updated_at', { ascending: false });
 
