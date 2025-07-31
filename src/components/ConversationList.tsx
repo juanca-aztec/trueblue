@@ -92,13 +92,21 @@ export function ConversationList({
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 <span>
-                  {conversation.updated_at ? 
-                    formatDistanceToNow(new Date(conversation.updated_at), {
-                      addSuffix: true,
-                      locale: es,
-                    }) : 
-                    'Fecha desconocida'
-                  }
+                  {(() => {
+                    if (!conversation.updated_at) return 'Fecha desconocida';
+                    
+                    const date = new Date(conversation.updated_at);
+                    if (isNaN(date.getTime())) return 'Fecha inválida';
+                    
+                    try {
+                      return formatDistanceToNow(date, {
+                        addSuffix: true,
+                        locale: es,
+                      });
+                    } catch (error) {
+                      return 'Fecha inválida';
+                    }
+                  })()}
                 </span>
               </div>
             </div>
