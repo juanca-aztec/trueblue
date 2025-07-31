@@ -173,46 +173,53 @@ export function ChatWindow({
       </Card>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-        {conversation.messages.map((message) => (
-          <Card key={message.id} className="max-w-md ml-auto">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <div className={getSenderColor(message.sender_role)}>
-                  {getSenderIcon(message.sender_role)}
-                </div>
-                <span className={`font-medium text-sm ${getSenderColor(message.sender_role)}`}>
-                  {getSenderLabel(message.sender_role)}
-                </span>
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {(() => {
-                    if (!message.created_at) return 'Fecha desconocida';
+      <div className="flex-1 overflow-y-auto space-y-3 mb-4 p-2 border rounded-lg bg-muted/20">
+        {conversation.messages
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+          .map((message) => {
+            const isUser = message.sender_role === 'user';
+            return (
+              <div key={message.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
+                <Card className={`max-w-md ${isUser ? 'mr-auto' : 'ml-auto'}`}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={getSenderColor(message.sender_role)}>
+                        {getSenderIcon(message.sender_role)}
+                      </div>
+                      <span className={`font-medium text-sm ${getSenderColor(message.sender_role)}`}>
+                        {getSenderLabel(message.sender_role)}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {(() => {
+                          if (!message.created_at) return 'Fecha desconocida';
+                          
+                          const date = new Date(message.created_at);
+                          if (isNaN(date.getTime())) return 'Fecha inválida';
+                          
+                          try {
+                            return formatDistanceToNow(date, {
+                              addSuffix: true,
+                              locale: es,
+                            });
+                          } catch (error) {
+                            return 'Fecha inválida';
+                          }
+                        })()}
+                      </span>
+                    </div>
                     
-                    const date = new Date(message.created_at);
-                    if (isNaN(date.getTime())) return 'Fecha inválida';
+                    <p className="text-sm">{message.content}</p>
                     
-                    try {
-                      return formatDistanceToNow(date, {
-                        addSuffix: true,
-                        locale: es,
-                      });
-                    } catch (error) {
-                      return 'Fecha inválida';
-                    }
-                  })()}
-                </span>
+                    {message.responded_by_agent_id && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Respondido por agente
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
-              
-              <p className="text-sm">{message.content}</p>
-              
-              {message.responded_by_agent_id && (
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Respondido por agente
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+            );
+          })}
       </div>
 
       {/* Message Input */}

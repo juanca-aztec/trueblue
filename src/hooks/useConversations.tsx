@@ -31,31 +31,35 @@ export function useConversations() {
         profilesMap.set(profile.id, profile);
       });
 
-      // Fetch messages for each conversation
-      const conversationsWithMessages = await Promise.all(
-        (conversationsData || []).map(async (conversation) => {
-          const { data: messages, error: messagesError } = await supabase
-            .from('tb_messages')
-            .select('*')
-            .eq('conversation_id', conversation.id)
-            .order('created_at', { ascending: true });
+      // Fetch ALL messages first, then group by conversation for better performance
+      const { data: allMessages, error: allMessagesError } = await supabase
+        .from('tb_messages')
+        .select('*')
+        .order('created_at', { ascending: true });
 
-          if (messagesError) {
-            console.error('Error fetching messages:', messagesError);
-            return { 
-              ...conversation, 
-              messages: [],
-              assigned_agent: conversation.assigned_agent_id ? profilesMap.get(conversation.assigned_agent_id) : null
-            };
-          }
+      if (allMessagesError) {
+        console.error('Error fetching all messages:', allMessagesError);
+      }
 
-          return {
-            ...conversation,
-            messages: messages || [],
-            assigned_agent: conversation.assigned_agent_id ? profilesMap.get(conversation.assigned_agent_id) : null
-          } as ConversationWithMessages;
-        })
-      );
+      // Group messages by conversation_id
+      const messagesByConversation = new Map();
+      (allMessages || []).forEach(message => {
+        if (!messagesByConversation.has(message.conversation_id)) {
+          messagesByConversation.set(message.conversation_id, []);
+        }
+        messagesByConversation.get(message.conversation_id).push(message);
+      });
+
+      // Build conversations with messages
+      const conversationsWithMessages = (conversationsData || []).map((conversation) => {
+        const messages = messagesByConversation.get(conversation.id) || [];
+        
+        return {
+          ...conversation,
+          messages,
+          assigned_agent: conversation.assigned_agent_id ? profilesMap.get(conversation.assigned_agent_id) : null
+        } as ConversationWithMessages;
+      });
 
       setConversations(conversationsWithMessages);
     } catch (error) {
