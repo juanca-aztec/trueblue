@@ -10,15 +10,26 @@ export function useConversations() {
 
   const fetchConversations = async () => {
     try {
+      // Fetch conversations first
       const { data: conversationsData, error: conversationsError } = await supabase
         .from('tb_conversations')
-        .select(`
-          *,
-          assigned_agent:profiles(*)
-        `)
+        .select('*')
         .order('updated_at', { ascending: false });
 
       if (conversationsError) throw conversationsError;
+
+      // Fetch all profiles to match with assigned agents
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of profiles by id for easy lookup
+      const profilesMap = new Map();
+      (profilesData || []).forEach(profile => {
+        profilesMap.set(profile.id, profile);
+      });
 
       // Fetch messages for each conversation
       const conversationsWithMessages = await Promise.all(
@@ -34,14 +45,14 @@ export function useConversations() {
             return { 
               ...conversation, 
               messages: [],
-              assigned_agent: Array.isArray(conversation.assigned_agent) ? conversation.assigned_agent[0] : conversation.assigned_agent 
+              assigned_agent: conversation.assigned_agent_id ? profilesMap.get(conversation.assigned_agent_id) : null
             };
           }
 
           return {
             ...conversation,
             messages: messages || [],
-            assigned_agent: Array.isArray(conversation.assigned_agent) ? conversation.assigned_agent[0] : conversation.assigned_agent
+            assigned_agent: conversation.assigned_agent_id ? profilesMap.get(conversation.assigned_agent_id) : null
           } as ConversationWithMessages;
         })
       );
