@@ -146,10 +146,21 @@ export function ChatWindow({
                   {getSenderLabel(message.sender_role)}
                 </span>
                 <span className="text-xs text-muted-foreground ml-auto">
-                  {formatDistanceToNow(new Date(message.created_at), {
-                    addSuffix: true,
-                    locale: es,
-                  })}
+                  {(() => {
+                    if (!message.created_at) return 'Fecha desconocida';
+                    
+                    const date = new Date(message.created_at);
+                    if (isNaN(date.getTime())) return 'Fecha inválida';
+                    
+                    try {
+                      return formatDistanceToNow(date, {
+                        addSuffix: true,
+                        locale: es,
+                      });
+                    } catch (error) {
+                      return 'Fecha inválida';
+                    }
+                  })()}
                 </span>
               </div>
               
