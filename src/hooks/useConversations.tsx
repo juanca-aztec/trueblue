@@ -118,6 +118,13 @@ export function useConversations() {
 
   const sendMessage = async (conversationId: string, content: string, agentId: string) => {
     try {
+      // Get conversation details for Telegram chat ID
+      const conversation = conversations.find(conv => conv.id === conversationId);
+      if (!conversation) {
+        throw new Error('Conversación no encontrada');
+      }
+
+      // Insert message in database
       const { error } = await supabase
         .from('tb_messages')
         .insert({
@@ -138,9 +145,45 @@ export function useConversations() {
         })
         .eq('id', conversationId);
 
+      // Send message to Telegram
+      try {
+        const telegramResponse = await fetch('/functions/v1/send-telegram-message', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            chatId: conversation.user_id, // Using user_id as Telegram chat ID
+            message: content,
+            conversationId: conversationId
+          }),
+        });
+
+        const telegramResult = await telegramResponse.json();
+        
+        if (!telegramResult.success) {
+          console.warn('Failed to send message to Telegram:', telegramResult.error);
+          toast({
+            title: "Mensaje enviado",
+            description: "Mensaje guardado pero no se pudo enviar por Telegram",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (telegramError) {
+        console.warn('Telegram integration error:', telegramError);
+        toast({
+          title: "Mensaje enviado",
+          description: "Mensaje guardado pero no se pudo enviar por Telegram",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Mensaje enviado",
-        description: "El mensaje se envió correctamente",
+        description: "El mensaje se envió correctamente a la base de datos y Telegram",
       });
     } catch (error) {
       console.error('Error sending message:', error);
