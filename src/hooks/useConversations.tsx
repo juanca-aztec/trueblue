@@ -206,9 +206,9 @@ export function useConversations() {
   useEffect(() => {
     fetchConversations();
 
-    // Subscribe to conversation changes
+    // Subscribe to conversation changes with more specific channel names
     const conversationChannel = supabase
-      .channel('conversations-changes')
+      .channel('public:tb_conversations')
       .on(
         'postgres_changes',
         {
@@ -216,15 +216,16 @@ export function useConversations() {
           schema: 'public',
           table: 'tb_conversations'
         },
-        () => {
+        (payload) => {
+          console.log('Conversation change detected:', payload);
           fetchConversations();
         }
       )
       .subscribe();
 
-    // Subscribe to message changes
+    // Subscribe to message changes with more specific channel names  
     const messageChannel = supabase
-      .channel('messages-changes')
+      .channel('public:tb_messages')
       .on(
         'postgres_changes',
         {
@@ -232,13 +233,18 @@ export function useConversations() {
           schema: 'public',
           table: 'tb_messages'
         },
-        () => {
+        (payload) => {
+          console.log('Message change detected:', payload);
           fetchConversations();
         }
       )
       .subscribe();
 
+    // Log subscription status
+    console.log('Setting up realtime subscriptions...');
+
     return () => {
+      console.log('Cleaning up realtime subscriptions...');
       supabase.removeChannel(conversationChannel);
       supabase.removeChannel(messageChannel);
     };

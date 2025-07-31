@@ -174,7 +174,12 @@ export function ChatWindow({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 mb-4 p-2 border rounded-lg bg-muted/20">
-        {conversation.messages.map((message) => {
+        {conversation.messages.length === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            No hay mensajes en esta conversación
+          </div>
+        ) : (
+          conversation.messages.map((message) => {
             const isUser = message.sender_role === 'user';
             return (
               <div key={message.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
@@ -206,7 +211,7 @@ export function ChatWindow({
                       </span>
                     </div>
                     
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     
                     {message.responded_by_agent_id && (
                       <div className="mt-2 text-xs text-muted-foreground">
@@ -217,7 +222,15 @@ export function ChatWindow({
                 </Card>
               </div>
             );
-          })}
+          })
+        )}
+        
+        {/* Auto scroll to bottom */}
+        <div ref={(el) => {
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+          }
+        }} />
       </div>
 
       {/* Message Input */}
