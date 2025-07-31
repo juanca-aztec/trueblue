@@ -135,6 +135,7 @@ export function useConversations() {
         .from('tb_conversations')
         .update({ 
           assigned_agent_id: agentId,
+          status: 'active_human' as ConversationStatus,
           updated_at: new Date().toISOString()
         })
         .eq('id', conversationId);

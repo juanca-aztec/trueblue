@@ -45,6 +45,7 @@ export function ChatWindow({
       case 'ai':
         return <Bot className="h-4 w-4" />;
       case 'agent':
+      case 'human':
         return <MessageSquare className="h-4 w-4" />;
       default:
         return <MessageSquare className="h-4 w-4" />;
@@ -56,9 +57,10 @@ export function ChatWindow({
       case 'user':
         return 'Usuario';
       case 'ai':
-        return 'AI';
+        return 'IA Trublue';
       case 'agent':
-        return 'Agente';
+      case 'human':
+        return 'Agente Trublue';
       default:
         return senderRole;
     }
@@ -71,6 +73,7 @@ export function ChatWindow({
       case 'ai':
         return 'text-purple-600';
       case 'agent':
+      case 'human':
         return 'text-green-600';
       default:
         return 'text-gray-600';
@@ -111,24 +114,60 @@ export function ChatWindow({
             )}
           </div>
 
-          {/* Agent Assignment */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Asignar a:</span>
-            <Select
-              value={conversation.assigned_agent_id || ''}
-              onValueChange={(value) => onAssignAgent(conversation.id, value)}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Seleccionar agente" />
-              </SelectTrigger>
-              <SelectContent>
-                {agents.map((agent) => (
-                  <SelectItem key={agent.id} value={agent.id}>
-                    {agent.name} ({agent.role})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Conversation Actions */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {conversation.status === 'active_ai' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAssignAgent(conversation.id, currentUser.id)}
+              >
+                Tomar conversación
+              </Button>
+            )}
+            
+            {conversation.status === 'active_human' && conversation.assigned_agent_id === currentUser.id && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onUpdateStatus(conversation.id, 'active_ai')}
+              >
+                Devolver a la IA
+              </Button>
+            )}
+            
+            {conversation.status === 'closed' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onUpdateStatus(conversation.id, 'active_human');
+                  onAssignAgent(conversation.id, currentUser.id);
+                }}
+              >
+                Reabrir conversación
+              </Button>
+            )}
+
+            {/* Agent Assignment */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Asignar a:</span>
+              <Select
+                value={conversation.assigned_agent_id || ''}
+                onValueChange={(value) => onAssignAgent(conversation.id, value)}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Seleccionar agente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      {agent.name} ({agent.role})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
       </Card>
