@@ -76,41 +76,38 @@ export type Database = {
           assigned_agent_id: string | null
           created_at: string
           id: string
-          instagram_page_id: string | null
-          instagram_user_id: string
-          instagram_username: string | null
           status: Database["public"]["Enums"]["conversation_status"]
           summary: string | null
           updated_at: string
+          user_id: string
+          username: string | null
         }
         Insert: {
           assigned_agent_id?: string | null
           created_at?: string
           id?: string
-          instagram_page_id?: string | null
-          instagram_user_id: string
-          instagram_username?: string | null
           status?: Database["public"]["Enums"]["conversation_status"]
           summary?: string | null
           updated_at?: string
+          user_id: string
+          username?: string | null
         }
         Update: {
           assigned_agent_id?: string | null
           created_at?: string
           id?: string
-          instagram_page_id?: string | null
-          instagram_user_id?: string
-          instagram_username?: string | null
           status?: Database["public"]["Enums"]["conversation_status"]
           summary?: string | null
           updated_at?: string
+          user_id?: string
+          username?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "tb_conversations_assigned_agent_id_fkey"
             columns: ["assigned_agent_id"]
             isOneToOne: false
-            referencedRelation: "tb_agents"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -121,7 +118,7 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
-          instagram_message_id: string | null
+          message_id: string | null
           metadata: Json | null
           responded_by_agent_id: string | null
           sender_role: Database["public"]["Enums"]["message_sender_role"]
@@ -131,7 +128,7 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
-          instagram_message_id?: string | null
+          message_id?: string | null
           metadata?: Json | null
           responded_by_agent_id?: string | null
           sender_role: Database["public"]["Enums"]["message_sender_role"]
@@ -141,7 +138,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
-          instagram_message_id?: string | null
+          message_id?: string | null
           metadata?: Json | null
           responded_by_agent_id?: string | null
           sender_role?: Database["public"]["Enums"]["message_sender_role"]
@@ -198,7 +195,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "agent"
+      app_role: "admin" | "agent" | "ai"
       conversation_status:
         | "active_ai"
         | "active_human"
@@ -332,7 +329,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "agent"],
+      app_role: ["admin", "agent", "ai"],
       conversation_status: [
         "active_ai",
         "active_human",

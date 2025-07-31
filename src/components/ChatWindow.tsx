@@ -87,7 +87,7 @@ export function ChatWindow({
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">
-              {conversation.instagram_username || conversation.instagram_user_id}
+              {conversation.username || conversation.user_id}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Select
@@ -108,10 +108,8 @@ export function ChatWindow({
           </div>
           
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>ID: {conversation.instagram_user_id}</span>
-            {conversation.instagram_page_id && (
-              <span>Página: {conversation.instagram_page_id}</span>
-            )}
+            <span>ID: {conversation.user_id}</span>
+            <span>Estado: {conversation.status}</span>
           </div>
 
           {/* Conversation Actions */}

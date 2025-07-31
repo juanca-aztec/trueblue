@@ -41,10 +41,10 @@ export function useConversations() {
         console.error('Error fetching all messages:', allMessagesError);
       }
 
-      // Group conversations by instagram_user_id to consolidate duplicates
+      // Group conversations by user_id to consolidate duplicates
       const conversationsByUser = new Map();
       (conversationsData || []).forEach(conversation => {
-        const userId = conversation.instagram_user_id;
+        const userId = conversation.user_id;
         if (!conversationsByUser.has(userId)) {
           conversationsByUser.set(userId, conversation);
         } else {
@@ -65,7 +65,7 @@ export function useConversations() {
         messagesByConversation.get(message.conversation_id).push(message);
       });
 
-      // Now group all messages by instagram_user_id
+      // Now group all messages by user_id
       const messagesByUser = new Map();
       conversationsByUser.forEach((conversation, userId) => {
         messagesByUser.set(userId, []);
@@ -73,7 +73,7 @@ export function useConversations() {
 
       // Find all conversation IDs for each user and collect their messages
       (conversationsData || []).forEach(conversation => {
-        const userId = conversation.instagram_user_id;
+        const userId = conversation.user_id;
         const conversationMessages = messagesByConversation.get(conversation.id) || [];
         
         if (messagesByUser.has(userId)) {
@@ -206,9 +206,13 @@ export function useConversations() {
   useEffect(() => {
     fetchConversations();
 
-    // Subscribe to conversation changes with more specific channel names
+    // Create unique channel names to avoid conflicts
+    const conversationChannelName = `conversations-${Date.now()}`;
+    const messageChannelName = `messages-${Date.now()}`;
+
+    // Subscribe to conversation changes
     const conversationChannel = supabase
-      .channel('public:tb_conversations')
+      .channel(conversationChannelName)
       .on(
         'postgres_changes',
         {
@@ -218,14 +222,17 @@ export function useConversations() {
         },
         (payload) => {
           console.log('Conversation change detected:', payload);
-          fetchConversations();
+          // Update local state immediately for better UX
+          setTimeout(() => {
+            fetchConversations();
+          }, 100);
         }
       )
       .subscribe();
 
-    // Subscribe to message changes with more specific channel names  
+    // Subscribe to message changes
     const messageChannel = supabase
-      .channel('public:tb_messages')
+      .channel(messageChannelName)
       .on(
         'postgres_changes',
         {
@@ -235,13 +242,18 @@ export function useConversations() {
         },
         (payload) => {
           console.log('Message change detected:', payload);
-          fetchConversations();
+          // Update local state immediately for better UX
+          setTimeout(() => {
+            fetchConversations();
+          }, 100);
         }
       )
       .subscribe();
 
-    // Log subscription status
-    console.log('Setting up realtime subscriptions...');
+    console.log('Setting up realtime subscriptions...', {
+      conversationChannel: conversationChannelName,
+      messageChannel: messageChannelName
+    });
 
     return () => {
       console.log('Cleaning up realtime subscriptions...');

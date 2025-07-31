@@ -69,7 +69,7 @@ export function ConversationList({
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">
-                  {conversation.instagram_username || conversation.instagram_user_id}
+                  {conversation.username || conversation.user_id}
                 </span>
               </div>
               <Badge 
