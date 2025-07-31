@@ -237,6 +237,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_current_user_status: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       use_invitation_token: {
         Args: { token_input: string; email_input: string }
         Returns: {
