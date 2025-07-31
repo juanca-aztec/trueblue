@@ -241,6 +241,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      is_user_active: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       use_invitation_token: {
         Args: { token_input: string; email_input: string }
         Returns: {
