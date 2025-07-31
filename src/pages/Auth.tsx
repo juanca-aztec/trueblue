@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MessageSquare } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { MessageSquare, AlertCircle } from 'lucide-react';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -14,6 +14,7 @@ export default function Auth() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [invitationToken, setInvitationToken] = useState('');
   const { signIn, signUp } = useAuth();
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -35,7 +36,7 @@ export default function Auth() {
     setLoading(true);
     setError('');
 
-    const { error } = await signUp(email, password, name);
+    const { error } = await signUp(email, password, name, invitationToken);
     
     if (error) {
       setError(error.message || 'Error al registrarse');
@@ -102,7 +103,25 @@ export default function Auth() {
             </TabsContent>
             
             <TabsContent value="signup">
+              <Alert className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Acceso Restringido</AlertTitle>
+                <AlertDescription>
+                  Solo emails autorizados pueden crear cuentas. Si no tienes acceso, contacta al administrador.
+                </AlertDescription>
+              </Alert>
               <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="invitation-token">Token de Invitación</Label>
+                  <Input
+                    id="invitation-token"
+                    type="text"
+                    placeholder="Token de invitación"
+                    value={invitationToken}
+                    onChange={(e) => setInvitationToken(e.target.value)}
+                    required
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="name">Nombre</Label>
                   <Input

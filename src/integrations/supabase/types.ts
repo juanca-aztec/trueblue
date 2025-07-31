@@ -21,6 +21,7 @@ export type Database = {
           id: string
           name: string
           role: Database["public"]["Enums"]["app_role"]
+          status: string
           updated_at: string
           user_id: string
         }
@@ -30,6 +31,7 @@ export type Database = {
           id?: string
           name: string
           role?: Database["public"]["Enums"]["app_role"]
+          status?: string
           updated_at?: string
           user_id: string
         }
@@ -39,6 +41,7 @@ export type Database = {
           id?: string
           name?: string
           role?: Database["public"]["Enums"]["app_role"]
+          status?: string
           updated_at?: string
           user_id?: string
         }
@@ -184,6 +187,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["app_role"]
+          token: string
+          used: boolean
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["app_role"]
+          token?: string
+          used?: boolean
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          token?: string
+          used?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -192,6 +236,16 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      use_invitation_token: {
+        Args: { token_input: string; email_input: string }
+        Returns: {
+          role_assigned: Database["public"]["Enums"]["app_role"]
+        }[]
+      }
+      validate_invitation_token: {
+        Args: { token_input: string; email_input: string }
+        Returns: boolean
       }
     }
     Enums: {

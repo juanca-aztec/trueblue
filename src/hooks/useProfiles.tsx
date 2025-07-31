@@ -29,20 +29,32 @@ export function useProfiles() {
     }
   };
 
-  const createProfile = async (email: string, password: string, name: string, role: 'admin' | 'agent') => {
+  const createInvitation = async (email: string, role: 'admin' | 'agent') => {
     try {
-      // This would typically be done through an admin function
-      // For now, we'll just show the toast
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      const { error } = await supabase
+        .from('user_invitations')
+        .insert({
+          email,
+          role,
+          invited_by: user.id
+        });
+
+      if (error) throw error;
+
       toast({
-        title: "Función no implementada",
-        description: "La creación de usuarios debe hacerse a través del panel de administración de Supabase",
-        variant: "destructive",
+        title: "Invitación enviada",
+        description: `Se ha enviado una invitación a ${email}`,
       });
+
+      await fetchProfiles();
     } catch (error) {
-      console.error('Error creating profile:', error);
+      console.error('Error creating invitation:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear el perfil",
+        description: "No se pudo enviar la invitación",
         variant: "destructive",
       });
     }
@@ -80,7 +92,7 @@ export function useProfiles() {
   return {
     profiles,
     loading,
-    createProfile,
+    createInvitation,
     updateProfile,
     refetch: fetchProfiles
   };
