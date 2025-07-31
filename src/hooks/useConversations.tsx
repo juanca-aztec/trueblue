@@ -147,7 +147,7 @@ export function useConversations() {
 
       // Send message to Telegram
       try {
-        const telegramResponse = await fetch('/functions/v1/send-telegram-message', {
+        const telegramResponse = await fetch('https://xmxmygsaogvbiemuzarm.supabase.co/functions/v1/send-telegram-message', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
