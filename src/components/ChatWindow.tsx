@@ -174,9 +174,7 @@ export function ChatWindow({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 mb-4 p-2 border rounded-lg bg-muted/20">
-        {conversation.messages
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .map((message) => {
+        {conversation.messages.map((message) => {
             const isUser = message.sender_role === 'user';
             return (
               <div key={message.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>

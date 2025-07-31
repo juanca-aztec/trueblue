@@ -41,7 +41,22 @@ export function useConversations() {
         console.error('Error fetching all messages:', allMessagesError);
       }
 
-      // Group messages by conversation_id
+      // Group conversations by instagram_user_id to consolidate duplicates
+      const conversationsByUser = new Map();
+      (conversationsData || []).forEach(conversation => {
+        const userId = conversation.instagram_user_id;
+        if (!conversationsByUser.has(userId)) {
+          conversationsByUser.set(userId, conversation);
+        } else {
+          // If we already have a conversation for this user, keep the most recent one
+          const existing = conversationsByUser.get(userId);
+          if (new Date(conversation.updated_at) > new Date(existing.updated_at)) {
+            conversationsByUser.set(userId, conversation);
+          }
+        }
+      });
+
+      // Group messages by conversation_id first, then consolidate by user
       const messagesByConversation = new Map();
       (allMessages || []).forEach(message => {
         if (!messagesByConversation.has(message.conversation_id)) {
@@ -50,16 +65,43 @@ export function useConversations() {
         messagesByConversation.get(message.conversation_id).push(message);
       });
 
-      // Build conversations with messages
-      const conversationsWithMessages = (conversationsData || []).map((conversation) => {
-        const messages = messagesByConversation.get(conversation.id) || [];
+      // Now group all messages by instagram_user_id
+      const messagesByUser = new Map();
+      conversationsByUser.forEach((conversation, userId) => {
+        messagesByUser.set(userId, []);
+      });
+
+      // Find all conversation IDs for each user and collect their messages
+      (conversationsData || []).forEach(conversation => {
+        const userId = conversation.instagram_user_id;
+        const conversationMessages = messagesByConversation.get(conversation.id) || [];
+        
+        if (messagesByUser.has(userId)) {
+          const existingMessages = messagesByUser.get(userId);
+          messagesByUser.set(userId, [...existingMessages, ...conversationMessages]);
+        }
+      });
+
+      // Build consolidated conversations with all messages for each user
+      const conversationsWithMessages = Array.from(conversationsByUser.entries()).map(([userId, conversation]) => {
+        const allUserMessages = messagesByUser.get(userId) || [];
+        
+        // Sort all messages by created_at to ensure proper chronological order
+        const sortedMessages = allUserMessages.sort((a, b) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
         
         return {
           ...conversation,
-          messages,
+          messages: sortedMessages,
           assigned_agent: conversation.assigned_agent_id ? profilesMap.get(conversation.assigned_agent_id) : null
         } as ConversationWithMessages;
       });
+
+      // Sort conversations by updated_at (most recent first)
+      conversationsWithMessages.sort((a, b) => 
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
 
       setConversations(conversationsWithMessages);
     } catch (error) {
