@@ -136,12 +136,8 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Error sending invitation email:', emailError);
       console.error('Error details:', JSON.stringify(emailError, null, 2));
       
-      // If email sending fails, we should clean up the invitation record
-      console.log('Cleaning up invitation record due to email failure');
-      await supabase
-        .from('user_invitations')
-        .delete()
-        .eq('id', invitationData.id);
+      // Don't clean up the invitation record - keep it for manual processing
+      console.log('Email sending failed, but keeping invitation record for manual processing');
       
       // Provide more specific error messages
       let userFriendlyMessage = emailError.message;
