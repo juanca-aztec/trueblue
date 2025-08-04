@@ -91,7 +91,7 @@ const handler = async (req: Request): Promise<Response> => {
         email: email,
         role: role,
         token: invitationToken,
-        invited_by: 'system', // We'll need to get the current user ID later
+        invited_by: '00000000-0000-0000-0000-000000000000', // System UUID
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
       })
       .select()
