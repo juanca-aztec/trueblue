@@ -31,31 +31,50 @@ export function useProfiles() {
 
   const createInvitation = async (email: string, role: 'admin' | 'agent') => {
     try {
-      // Create invitation record first
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
       console.log('Creating invitation for:', email, 'with role:', role);
 
-      const { data: invitation, error: inviteError } = await supabase
+      // Check if there's an existing active invitation
+      const { data: existingInvitation } = await supabase
         .from('user_invitations')
-        .insert({
-          email,
-          role,
-          invited_by: user.id
-        })
         .select('token')
+        .eq('email', email)
+        .eq('used', false)
+        .gt('expires_at', new Date().toISOString())
         .single();
 
-      if (inviteError) {
-        console.error('Error creating invitation record:', inviteError);
-        throw inviteError;
+      let invitationToken: string;
+      let isNewInvitation = false;
+
+      if (existingInvitation) {
+        console.log('Using existing invitation:', existingInvitation);
+        invitationToken = existingInvitation.token;
+      } else {
+        console.log('Creating new invitation...');
+        const { data: newInvitation, error: inviteError } = await supabase
+          .from('user_invitations')
+          .insert({
+            email,
+            role,
+            invited_by: user.id
+          })
+          .select('token')
+          .single();
+
+        if (inviteError) {
+          console.error('Error creating invitation record:', inviteError);
+          throw inviteError;
+        }
+
+        console.log('New invitation created successfully:', newInvitation);
+        invitationToken = newInvitation.token;
+        isNewInvitation = true;
       }
 
-      console.log('Invitation record created successfully:', invitation);
-
       // Use Supabase's native invitation system
-      const redirectUrl = `${window.location.origin}/auth?invitation_token=${invitation.token}`;
+      const redirectUrl = `${window.location.origin}/auth?invitation_token=${invitationToken}`;
       
       console.log('Attempting to send invitation email to:', email);
       console.log('Redirect URL:', redirectUrl);
@@ -63,7 +82,7 @@ export function useProfiles() {
       const { error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
         redirectTo: redirectUrl,
         data: {
-          invitation_token: invitation.token,
+          invitation_token: invitationToken,
           role: role
         }
       });
@@ -78,9 +97,12 @@ export function useProfiles() {
           variant: "destructive",
         });
       } else {
+        const message = isNewInvitation 
+          ? `Se ha enviado una nueva invitación por email a ${email}`
+          : `Se ha reenviado la invitación existente a ${email}`;
         toast({
           title: "Invitación enviada",
-          description: `Se ha enviado una invitación por email a ${email}`,
+          description: message,
         });
       }
 
