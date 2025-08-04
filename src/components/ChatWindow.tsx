@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { ConversationWithMessages, Profile, ConversationStatus } from '@/types/database';
 import { Send, User, Bot, MessageSquare } from 'lucide-react';
 
@@ -171,68 +172,72 @@ export function ChatWindow({
       </Card>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3 mb-4 p-2 border rounded-lg bg-muted/20">
-        {conversation.messages.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
-            No hay mensajes en esta conversación
-          </div>
-        ) : (
-          conversation.messages.map((message) => {
-            const isUser = message.sender_role === 'user';
-            return (
-              <div key={message.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
-                <Card className={`max-w-md ${isUser ? 'mr-auto' : 'ml-auto'}`}>
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={getSenderColor(message.sender_role)}>
-                        {getSenderIcon(message.sender_role)}
-                      </div>
-                      <span className={`font-medium text-sm ${getSenderColor(message.sender_role)}`}>
-                        {getSenderLabel(message.sender_role)}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        {(() => {
-                          if (!message.created_at) return 'Fecha desconocida';
-                          
-                          const date = new Date(message.created_at);
-                          if (isNaN(date.getTime())) return 'Fecha inválida';
-                          
-                          try {
-                            return formatDistanceToNow(date, {
-                              addSuffix: true,
-                              locale: es,
-                            });
-                          } catch (error) {
-                            return 'Fecha inválida';
-                          }
-                        })()}
-                      </span>
-                    </div>
-                    
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    
-                    {message.responded_by_agent_id && (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Respondido por agente
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+      <div className="flex-1 border rounded-lg bg-muted/20">
+        <ScrollArea className="h-full">
+          <div className="space-y-3 p-2">
+            {conversation.messages.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                No hay mensajes en esta conversación
               </div>
-            );
-          })
-        )}
-        
-        {/* Auto scroll to bottom */}
-        <div ref={(el) => {
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth' });
-          }
-        }} />
+            ) : (
+              conversation.messages.map((message) => {
+                const isUser = message.sender_role === 'user';
+                return (
+                  <div key={message.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
+                    <Card className={`max-w-md ${isUser ? 'mr-auto' : 'ml-auto'}`}>
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={getSenderColor(message.sender_role)}>
+                            {getSenderIcon(message.sender_role)}
+                          </div>
+                          <span className={`font-medium text-sm ${getSenderColor(message.sender_role)}`}>
+                            {getSenderLabel(message.sender_role)}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {(() => {
+                              if (!message.created_at) return 'Fecha desconocida';
+                              
+                              const date = new Date(message.created_at);
+                              if (isNaN(date.getTime())) return 'Fecha inválida';
+                              
+                              try {
+                                return formatDistanceToNow(date, {
+                                  addSuffix: true,
+                                  locale: es,
+                                });
+                              } catch (error) {
+                                return 'Fecha inválida';
+                              }
+                            })()}
+                          </span>
+                        </div>
+                        
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        
+                        {message.responded_by_agent_id && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            Respondido por agente
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })
+            )}
+            
+            {/* Auto scroll to bottom */}
+            <div ref={(el) => {
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+              }
+            }} />
+          </div>
+        </ScrollArea>
       </div>
 
       {/* Message Input */}
-      <Card>
+      <Card className="mt-4">
         <CardContent className="p-4">
           <div className="flex gap-2">
             <Textarea
