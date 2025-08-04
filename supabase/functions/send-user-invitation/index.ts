@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.53.0";
+import { Resend } from "npm:resend@2.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,49 +25,50 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Edge function received request:', { email, role, invitationToken });
 
-    // Initialize Supabase client with service role key for admin operations
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
-
-    // Construct redirect URL
-    const redirectUrl = `https://preview--trueblue-chat-management.lovable.app/auth?invitation_token=${invitationToken}`;
+    // Construct invitation URL
+    const invitationUrl = `https://preview--trueblue-chat-management.lovable.app/auth?invitation_token=${invitationToken}`;
     
     console.log('Sending invitation email to:', email);
-    console.log('Redirect URL:', redirectUrl);
+    console.log('Invitation URL:', invitationUrl);
     
-    // Send invitation email using admin privileges
-    const { error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
-      redirectTo: redirectUrl,
-      data: {
-        invitation_token: invitationToken,
-        role: role
-      }
+    // Send invitation email using Resend
+    const emailResponse = await resend.emails.send({
+      from: "Sistema de Chat <onboarding@resend.dev>",
+      to: [email],
+      subject: "Invitación al Sistema de Gestión de Chat",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #333; text-align: center;">¡Has sido invitado!</h1>
+          
+          <p>Hola,</p>
+          
+          <p>Has sido invitado a unirte al Sistema de Gestión de Chat como <strong>${role === 'admin' ? 'Administrador' : 'Agente'}</strong>.</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${invitationUrl}" 
+               style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              Acceder a la Plataforma
+            </a>
+          </div>
+          
+          <p>Al hacer clic en el botón, podrás crear tu cuenta y acceder inmediatamente al sistema.</p>
+          
+          <p style="font-size: 12px; color: #666; margin-top: 40px;">
+            Si no puedes hacer clic en el botón, copia y pega este enlace en tu navegador:<br>
+            <a href="${invitationUrl}" style="color: #007bff; word-break: break-all;">${invitationUrl}</a>
+          </p>
+          
+          <p style="font-size: 12px; color: #666;">
+            Si no esperabas esta invitación, puedes ignorar este mensaje.
+          </p>
+        </div>
+      `,
     });
 
-    console.log('Email invitation result:', { emailError });
+    console.log('Email sent successfully:', emailResponse);
 
-    if (emailError) {
-      console.error('Error sending invitation:', emailError);
-      return new Response(
-        JSON.stringify({ success: false, error: emailError.message }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        }
-      );
-    }
-
-    console.log('Invitation sent successfully');
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, emailResponse }),
       {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
