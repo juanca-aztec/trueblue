@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { useProfiles } from '@/hooks/useProfiles';
@@ -12,7 +12,16 @@ export default function Dashboard() {
   const { profile } = useAuth();
   const { conversations, loading, sendMessage, updateConversationStatus, assignConversation } = useConversations();
   const { profiles } = useProfiles();
-  const [selectedConversation, setSelectedConversation] = useState<ConversationWithMessages | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+
+  // Keep selectedConversation synchronized with conversations updates
+  const selectedConversation = selectedConversationId 
+    ? conversations.find(conv => conv.id === selectedConversationId) || null
+    : null;
+
+  const handleSelectConversation = (conversation: ConversationWithMessages) => {
+    setSelectedConversationId(conversation.id);
+  };
 
   if (loading) {
     return (
@@ -87,8 +96,8 @@ export default function Dashboard() {
         <div className="lg:col-span-1">
           <ConversationTabs
             conversations={conversations}
-            selectedConversationId={selectedConversation?.id || null}
-            onSelectConversation={setSelectedConversation}
+            selectedConversationId={selectedConversationId}
+            onSelectConversation={handleSelectConversation}
           />
         </div>
 
