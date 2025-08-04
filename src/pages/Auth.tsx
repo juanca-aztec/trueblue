@@ -105,23 +105,12 @@ export default function Auth() {
             <TabsContent value="signup">
               <Alert className="mb-4">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Acceso Restringido</AlertTitle>
+                <AlertTitle>Acceso por Invitación</AlertTitle>
                 <AlertDescription>
-                  Solo emails autorizados pueden crear cuentas. Si no tienes acceso, contacta al administrador.
+                  Si has recibido una invitación por email, establece tu contraseña y nombre aquí. Si no has recibido una invitación, contacta al administrador.
                 </AlertDescription>
               </Alert>
               <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="invitation-token">Token de Invitación</Label>
-                  <Input
-                    id="invitation-token"
-                    type="text"
-                    placeholder="Token de invitación"
-                    value={invitationToken}
-                    onChange={(e) => setInvitationToken(e.target.value)}
-                    required
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="name">Nombre</Label>
                   <Input
@@ -129,16 +118,6 @@ export default function Auth() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
@@ -158,7 +137,7 @@ export default function Auth() {
                   </Alert>
                 )}
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Registrando...' : 'Registrarse'}
+                  {loading ? 'Registrando...' : 'Establecer Contraseña'}
                 </Button>
               </form>
             </TabsContent>

@@ -65,21 +65,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string, invitationToken?: string) => {
     try {
-      // If there's no invitation token, block registration
-      if (!invitationToken) {
-        return { error: { message: "Solo emails autorizados pueden crear cuentas. Contacta al administrador." } };
-      }
-
-      // Validate invitation token first
-      const { data: isValid } = await supabase.rpc('validate_invitation_token', {
-        token_input: invitationToken,
-        email_input: email
-      });
-
-      if (!isValid) {
-        return { error: { message: "Token de invitación inválido o expirado." } };
-      }
-
       const redirectUrl = `${window.location.origin}/`;
       
       const { error } = await supabase.auth.signUp({
@@ -88,8 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            name: name,
-            invitation_token: invitationToken
+            name: name
           }
         }
       });

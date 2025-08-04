@@ -35,55 +35,11 @@ export function useProfiles() {
       if (!user) throw new Error('Usuario no autenticado');
 
       console.log('Creating invitation for:', email, 'with role:', role);
-
-      // Check if there's an existing active invitation
-      const { data: existingInvitation } = await supabase
-        .from('user_invitations')
-        .select('token')
-        .eq('email', email)
-        .eq('used', false)
-        .gt('expires_at', new Date().toISOString())
-        .single();
-
-      let invitationToken: string;
-      let isNewInvitation = false;
-
-      if (existingInvitation) {
-        console.log('Using existing invitation:', existingInvitation);
-        invitationToken = existingInvitation.token;
-      } else {
-        console.log('Creating new invitation...');
-        const { data: newInvitation, error: inviteError } = await supabase
-          .from('user_invitations')
-          .insert({
-            email,
-            role,
-            invited_by: user.id
-          })
-          .select('token')
-          .single();
-
-        if (inviteError) {
-          console.error('Error creating invitation record:', inviteError);
-          throw inviteError;
-        }
-
-        console.log('New invitation created successfully:', newInvitation);
-        invitationToken = newInvitation.token;
-        isNewInvitation = true;
-      }
-
-      // Use Supabase's native invitation system
-      const redirectUrl = `${window.location.origin}/auth?invitation_token=${invitationToken}`;
       
-      console.log('Attempting to send invitation email via Edge Function to:', email);
-      console.log('Redirect URL:', redirectUrl);
-      
-      // Call Edge Function to send invitation email
+      // Call Edge Function to send invitation using Supabase native system
       const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-user-invitation', {
         body: {
           email,
-          invitationToken,
           role
         }
       });
@@ -98,12 +54,9 @@ export function useProfiles() {
           variant: "destructive",
         });
       } else {
-        const message = isNewInvitation 
-          ? `Se ha enviado una nueva invitación por email a ${email}`
-          : `Se ha reenviado la invitación existente a ${email}`;
         toast({
           title: "Invitación enviada",
-          description: message,
+          description: `Se ha enviado una invitación por email a ${email}`,
         });
       }
 
