@@ -13,19 +13,24 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [invitationToken, setInvitationToken] = useState('');
-  const { signIn, signUp } = useAuth();
+  const { signInWithMagicLink, signUp } = useAuth();
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleMagicLinkSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
-    const { error } = await signIn(email, password);
+    const { error, message } = await signInWithMagicLink(email);
     
     if (error) {
-      setError(error.message || 'Error al iniciar sesión');
+      setError(error.message || 'Error al enviar el enlace mágico');
+    } else if (message) {
+      setSuccess(message);
+      setEmail(''); // Clear email after successful send
     }
     
     setLoading(false);
@@ -65,12 +70,19 @@ export default function Auth() {
         <CardContent>
           <Tabs defaultValue="signin">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
+              <TabsTrigger value="signin">Acceso con Email</TabsTrigger>
               <TabsTrigger value="signup">Registrarse</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
+              <Alert className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Acceso con Enlace Mágico</AlertTitle>
+                <AlertDescription>
+                  Ingresa tu email y te enviaremos un enlace seguro para acceder sin contraseña.
+                </AlertDescription>
+              </Alert>
+              <form onSubmit={handleMagicLinkSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -78,26 +90,24 @@ export default function Auth() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="tu-email@ejemplo.com"
                     required
                   />
                 </div>
                 {error && (
                   <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
+                {success && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{success}</AlertDescription>
+                  </Alert>
+                )}
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                  {loading ? 'Enviando enlace...' : 'Enviar Enlace Mágico'}
                 </Button>
               </form>
             </TabsContent>
