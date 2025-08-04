@@ -35,6 +35,8 @@ export function useProfiles() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
+      console.log('Creating invitation for:', email, 'with role:', role);
+
       const { data: invitation, error: inviteError } = await supabase
         .from('user_invitations')
         .insert({
@@ -45,10 +47,18 @@ export function useProfiles() {
         .select('token')
         .single();
 
-      if (inviteError) throw inviteError;
+      if (inviteError) {
+        console.error('Error creating invitation record:', inviteError);
+        throw inviteError;
+      }
+
+      console.log('Invitation record created successfully:', invitation);
 
       // Use Supabase's native invitation system
       const redirectUrl = `${window.location.origin}/auth?invitation_token=${invitation.token}`;
+      
+      console.log('Attempting to send invitation email to:', email);
+      console.log('Redirect URL:', redirectUrl);
       
       const { error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
         redirectTo: redirectUrl,
@@ -58,11 +68,13 @@ export function useProfiles() {
         }
       });
 
+      console.log('Email invitation result:', { emailError });
+
       if (emailError) {
         console.error('Error sending invitation:', emailError);
         toast({
           title: "Error",
-          description: "No se pudo enviar la invitación por email",
+          description: `No se pudo enviar la invitación por email: ${emailError.message}`,
           variant: "destructive",
         });
       } else {
