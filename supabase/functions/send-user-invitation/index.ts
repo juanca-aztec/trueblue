@@ -22,38 +22,56 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Edge function received request:', { email, role });
 
-    // Initialize Supabase client with service role key for admin operations
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
+    // Validate required environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('Missing required environment variables');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing required environment variables' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
         }
+      );
+    }
+
+    // Initialize Supabase client with service role key for admin operations
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
       }
-    );
+    });
 
     // Construct redirect URL
     const redirectUrl = `https://preview--trueblue-chat-management.lovable.app/auth`;
     
     console.log('Sending invitation email to:', email);
     console.log('Redirect URL:', redirectUrl);
+    console.log('Role to assign:', role);
     
     // Send invitation email using Supabase admin inviteUserByEmail
-    const { error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
+    const { data: inviteData, error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
       redirectTo: redirectUrl,
       data: {
         role: role
       }
     });
 
-    console.log('Email invitation result:', { emailError });
+    console.log('Invite response data:', inviteData);
+    console.log('Email invitation error:', emailError);
 
     if (emailError) {
       console.error('Error sending invitation:', emailError);
+      console.error('Error details:', JSON.stringify(emailError, null, 2));
       return new Response(
-        JSON.stringify({ success: false, error: emailError.message }),
+        JSON.stringify({ 
+          success: false, 
+          error: emailError.message,
+          details: emailError
+        }),
         {
           status: 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -63,7 +81,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Invitation sent successfully');
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, data: inviteData }),
       {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
