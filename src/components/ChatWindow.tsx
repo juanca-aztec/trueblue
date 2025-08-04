@@ -172,8 +172,8 @@ export function ChatWindow({
       </Card>
 
       {/* Messages */}
-      <div className="flex-1 border rounded-lg bg-muted/20">
-        <ScrollArea className="h-full">
+      <div className="flex-1 min-h-0 border rounded-lg bg-muted/20">
+        <ScrollArea className="h-[400px]">
           <div className="space-y-3 p-2">
             {conversation.messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
