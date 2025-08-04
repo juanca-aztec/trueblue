@@ -68,90 +68,41 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Acceso con Email</TabsTrigger>
-              <TabsTrigger value="signup">Registrarse</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin">
-              <Alert className="mb-4">
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Acceso por Invitación</AlertTitle>
+            <AlertDescription>
+              Solo los usuarios invitados por un administrador pueden acceder al sistema. Ingresa tu email para recibir un enlace de acceso seguro.
+            </AlertDescription>
+          </Alert>
+          <form onSubmit={handleMagicLinkSignIn} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu-email@ejemplo.com"
+                required
+              />
+            </div>
+            {error && (
+              <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Acceso con Enlace Mágico</AlertTitle>
-                <AlertDescription>
-                  Ingresa tu email y te enviaremos un enlace seguro para acceder sin contraseña.
-                </AlertDescription>
+                <AlertDescription>{error}</AlertDescription>
               </Alert>
-              <form onSubmit={handleMagicLinkSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu-email@ejemplo.com"
-                    required
-                  />
-                </div>
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                {success && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{success}</AlertDescription>
-                  </Alert>
-                )}
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Enviando enlace...' : 'Enviar Enlace Mágico'}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <Alert className="mb-4">
+            )}
+            {success && (
+              <Alert>
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Acceso por Invitación</AlertTitle>
-                <AlertDescription>
-                  Si has recibido una invitación por email, establece tu contraseña y nombre aquí. Si no has recibido una invitación, contacta al administrador.
-                </AlertDescription>
+                <AlertDescription>{success}</AlertDescription>
               </Alert>
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Contraseña</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Registrando...' : 'Establecer Contraseña'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Enviando enlace...' : 'Enviar Enlace Mágico'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
