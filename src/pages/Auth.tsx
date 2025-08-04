@@ -36,7 +36,7 @@ export default function Auth() {
     setLoading(true);
     setError('');
 
-    const { error } = await signUp(email, password, name, invitationToken);
+    const { error } = await signUp(email, password, name);
     
     if (error) {
       setError(error.message || 'Error al registrarse');
