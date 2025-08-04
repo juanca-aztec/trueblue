@@ -31,18 +31,11 @@ export function useProfiles() {
 
   const createInvitation = async (email: string, role: 'admin' | 'agent') => {
     try {
+      // Create invitation record first
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
-      // Get current user profile to get name
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('user_id', user.id)
-        .single();
-
-      // Create invitation record
-      const { data: invitation, error } = await supabase
+      const { data: invitation, error: inviteError } = await supabase
         .from('user_invitations')
         .insert({
           email,
@@ -52,23 +45,24 @@ export function useProfiles() {
         .select('token')
         .single();
 
-      if (error) throw error;
+      if (inviteError) throw inviteError;
 
-      // Send invitation email
-      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
-        body: {
-          email,
-          role,
-          token: invitation.token,
-          inviterName: profile?.name || user.email || 'Un administrador'
+      // Use Supabase's native invitation system
+      const redirectUrl = `${window.location.origin}/auth?invitation_token=${invitation.token}`;
+      
+      const { error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
+        redirectTo: redirectUrl,
+        data: {
+          invitation_token: invitation.token,
+          role: role
         }
       });
 
       if (emailError) {
-        console.error('Error sending email:', emailError);
+        console.error('Error sending invitation:', emailError);
         toast({
-          title: "Invitación creada",
-          description: `Invitación creada para ${email}, pero hubo un error enviando el email. El usuario puede registrarse con el token: ${invitation.token}`,
+          title: "Error",
+          description: "No se pudo enviar la invitación por email",
           variant: "destructive",
         });
       } else {
