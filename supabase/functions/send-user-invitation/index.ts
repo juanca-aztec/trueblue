@@ -66,14 +66,29 @@ const handler = async (req: Request): Promise<Response> => {
     if (emailError) {
       console.error('Error sending invitation:', emailError);
       console.error('Error details:', JSON.stringify(emailError, null, 2));
+      console.error('Error code:', emailError.code);
+      console.error('Error status:', emailError.status);
+      
+      // Provide more specific error messages
+      let userFriendlyMessage = emailError.message;
+      if (emailError.code === 'unexpected_failure') {
+        userFriendlyMessage = 'Database error while creating user invitation. Please try again.';
+      } else if (emailError.message?.includes('already registered')) {
+        userFriendlyMessage = 'This email is already registered. Please use a different email address.';
+      }
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: emailError.message,
-          details: emailError
+          error: userFriendlyMessage,
+          details: {
+            code: emailError.code,
+            status: emailError.status,
+            originalMessage: emailError.message
+          }
         }),
         {
-          status: 400,
+          status: emailError.status || 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
         }
       );
