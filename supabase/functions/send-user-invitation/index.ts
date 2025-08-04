@@ -45,8 +45,77 @@ const handler = async (req: Request): Promise<Response> => {
       }
     });
 
-    // Construct redirect URL
-    const redirectUrl = `https://preview--trueblue-chat-management.lovable.app/auth`;
+    // Check for existing invitation
+    console.log('Checking for existing invitation for:', email);
+    const { data: existingInvitation, error: checkError } = await supabase
+      .from('user_invitations')
+      .select('*')
+      .eq('email', email)
+      .eq('used', false)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing invitation:', checkError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Error checking existing invitations' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+
+    if (existingInvitation) {
+      console.log('Found existing valid invitation:', existingInvitation);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'User already has a pending invitation. Please check their email or wait for the current invitation to expire.' 
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+
+    // Generate unique token for invitation
+    const invitationToken = crypto.randomUUID();
+    
+    // Create invitation record first
+    console.log('Creating invitation record for:', email, 'with role:', role);
+    const { data: invitationData, error: invitationError } = await supabase
+      .from('user_invitations')
+      .insert({
+        email: email,
+        role: role,
+        token: invitationToken,
+        invited_by: 'system', // We'll need to get the current user ID later
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+      })
+      .select()
+      .single();
+
+    if (invitationError) {
+      console.error('Error creating invitation record:', invitationError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Failed to create invitation record',
+          details: invitationError
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+
+    console.log('Invitation record created successfully:', invitationData);
+
+    // Construct redirect URL with token
+    const redirectUrl = `https://preview--trueblue-chat-management.lovable.app/auth?token=${invitationToken}&email=${encodeURIComponent(email)}`;
     
     console.log('Sending invitation email to:', email);
     console.log('Redirect URL:', redirectUrl);
@@ -56,23 +125,28 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: inviteData, error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
       redirectTo: redirectUrl,
       data: {
-        role: role
+        role: role,
+        invitation_token: invitationToken
       }
     });
 
     console.log('Invite response data:', inviteData);
-    console.log('Email invitation error:', emailError);
 
     if (emailError) {
-      console.error('Error sending invitation:', emailError);
+      console.error('Error sending invitation email:', emailError);
       console.error('Error details:', JSON.stringify(emailError, null, 2));
-      console.error('Error code:', emailError.code);
-      console.error('Error status:', emailError.status);
+      
+      // If email sending fails, we should clean up the invitation record
+      console.log('Cleaning up invitation record due to email failure');
+      await supabase
+        .from('user_invitations')
+        .delete()
+        .eq('id', invitationData.id);
       
       // Provide more specific error messages
       let userFriendlyMessage = emailError.message;
       if (emailError.code === 'unexpected_failure') {
-        userFriendlyMessage = 'Database error while creating user invitation. Please try again.';
+        userFriendlyMessage = 'Failed to send invitation email. Please try again.';
       } else if (emailError.message?.includes('already registered')) {
         userFriendlyMessage = 'This email is already registered. Please use a different email address.';
       }
@@ -96,7 +170,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Invitation sent successfully');
     return new Response(
-      JSON.stringify({ success: true, data: inviteData }),
+      JSON.stringify({ 
+        success: true, 
+        data: {
+          invitation: invitationData,
+          email_sent: inviteData
+        }
+      }),
       {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
