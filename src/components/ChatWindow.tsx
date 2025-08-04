@@ -57,10 +57,10 @@ export function ChatWindow({
       case 'user':
         return 'Usuario';
       case 'ai':
-        return 'IA Trublue';
+        return 'IA Trueblue';
       case 'agent':
       case 'human':
-        return 'Agente Trublue';
+        return 'Agente Trueblue';
       default:
         return senderRole;
     }

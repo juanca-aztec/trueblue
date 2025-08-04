@@ -42,7 +42,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         {!collapsed && (
           <div className="text-xl font-bold text-primary">
-            Trublue
+            Trueblue
           </div>
         )}
       </SidebarHeader>

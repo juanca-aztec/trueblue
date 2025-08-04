@@ -59,7 +59,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-hidden">
           <header className="h-12 flex items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <SidebarTrigger className="ml-2" />
-            <div className="ml-4 text-lg font-semibold">Trublue</div>
+            <div className="ml-4 text-lg font-semibold">Trueblue</div>
           </header>
           <div className="h-[calc(100vh-3rem)] overflow-auto">
             {children}
