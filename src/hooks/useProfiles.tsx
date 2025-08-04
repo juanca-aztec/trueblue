@@ -76,18 +76,19 @@ export function useProfiles() {
       // Use Supabase's native invitation system
       const redirectUrl = `${window.location.origin}/auth?invitation_token=${invitationToken}`;
       
-      console.log('Attempting to send invitation email to:', email);
+      console.log('Attempting to send invitation email via Edge Function to:', email);
       console.log('Redirect URL:', redirectUrl);
       
-      const { error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: redirectUrl,
-        data: {
-          invitation_token: invitationToken,
-          role: role
+      // Call Edge Function to send invitation email
+      const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-user-invitation', {
+        body: {
+          email,
+          invitationToken,
+          role
         }
       });
 
-      console.log('Email invitation result:', { emailError });
+      console.log('Email invitation result:', { emailResult, emailError });
 
       if (emailError) {
         console.error('Error sending invitation:', emailError);
