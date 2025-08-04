@@ -91,7 +91,7 @@ const handler = async (req: Request): Promise<Response> => {
         email: email,
         role: role,
         token: invitationToken,
-        invited_by: '01d64748-e74c-4d16-a8f0-3b20e9e7e3c9', // Admin user juanca@azteclab.co
+        invited_by: '703427fd-17f4-476a-be45-add2585c584f', // Admin user juanca@azteclab.co
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
       })
       .select()
