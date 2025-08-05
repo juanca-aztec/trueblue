@@ -70,11 +70,12 @@ export function useAgents() {
         throw invitationError;
       }
 
-      // Enviar magic link con token de invitación incluido
+      // Crear usuario en Supabase Auth y enviar email de confirmación automáticamente
       const redirectUrl = `${window.location.origin}/auth?token=${invitationToken}&email=${email}`;
       
-      const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email: email,
+        password: crypto.randomUUID(), // Password temporal que el usuario no necesitará
         options: {
           emailRedirectTo: redirectUrl,
           data: {
@@ -85,17 +86,17 @@ export function useAgents() {
         }
       });
 
-      if (magicLinkError) {
-        console.error('Error sending magic link:', magicLinkError);
-        throw magicLinkError;
+      if (signUpError) {
+        console.error('Error creating user:', signUpError);
+        throw signUpError;
       }
 
-      console.log(`✅ Magic link enviado a ${email} con token: ${invitationToken}`);
+      console.log(`✅ Usuario creado y email enviado a ${email} con token: ${invitationToken}`);
       console.log(`🔗 URL de redirección: ${redirectUrl}`);
 
       toast({
         title: "Invitación enviada",
-        description: `Se ha enviado un enlace mágico a ${email} para completar el registro`,
+        description: `Se ha enviado un email de confirmación a ${email} para completar el registro`,
       });
 
       await fetchAgents();
