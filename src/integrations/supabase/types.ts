@@ -76,7 +76,9 @@ export type Database = {
       }
       tb_conversations: {
         Row: {
+          assigned_agent_email: string | null
           assigned_agent_id: string | null
+          assigned_agent_name: string | null
           created_at: string
           id: string
           status: Database["public"]["Enums"]["conversation_status"]
@@ -86,7 +88,9 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          assigned_agent_email?: string | null
           assigned_agent_id?: string | null
+          assigned_agent_name?: string | null
           created_at?: string
           id?: string
           status?: Database["public"]["Enums"]["conversation_status"]
@@ -96,7 +100,9 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          assigned_agent_email?: string | null
           assigned_agent_id?: string | null
+          assigned_agent_name?: string | null
           created_at?: string
           id?: string
           status?: Database["public"]["Enums"]["conversation_status"]
