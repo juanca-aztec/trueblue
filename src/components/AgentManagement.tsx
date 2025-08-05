@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useProfiles } from "@/hooks/useProfiles";
 import { useAuth } from "@/hooks/useAuth";
 import { Profile } from "@/types/database";
-import { Plus, Mail, User, Edit, UserCheck, UserX, Trash2 } from "lucide-react";
+import { Plus, Mail, User, Edit, UserCheck, UserX, Trash2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AgentManagement() {
@@ -175,6 +175,12 @@ export default function AgentManagement() {
                       <Mail className="h-3 w-3" />
                       {agent.email}
                     </div>
+                    {agent.created_by_name && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <UserPlus className="h-3 w-3" />
+                        Creado por: {agent.created_by_name}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
