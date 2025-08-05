@@ -137,26 +137,41 @@ export function useAgents() {
         throw signUpError;
       }
 
+      console.log(`📧 Respuesta completa de signUp:`, {
+        data: signUpData,
+        error: signUpError,
+        timestamp: new Date().toISOString()
+      });
+
       // Verificar si el email fue enviado exitosamente
       if (signUpData?.user) {
         console.log(`✅ Usuario creado en Auth:`, {
           id: signUpData.user.id,
           email: signUpData.user.email,
           confirmed_at: signUpData.user.confirmed_at,
-          email_confirmed_at: signUpData.user.email_confirmed_at
+          email_confirmed_at: signUpData.user.email_confirmed_at,
+          user_metadata: signUpData.user.user_metadata
         });
+        
+        // Verificar que el user_id existe antes de actualizar
+        console.log(`🔍 Verificando que el usuario existe en auth.users: ${signUpData.user.id}`);
         
         // Actualizar el perfil con el user_id del usuario recién creado
         console.log(`🔄 Actualizando perfil con user_id: ${signUpData.user.id}`);
-        const { error: updateError } = await supabase
+        const { data: updateData, error: updateError } = await supabase
           .from('profiles')
           .update({ user_id: signUpData.user.id })
-          .eq('email', email);
+          .eq('email', email)
+          .select();
 
         if (updateError) {
-          console.error('❌ Error actualizando user_id en perfil:', updateError);
+          console.error('❌ Error actualizando user_id en perfil:', {
+            error: updateError,
+            attempted_user_id: signUpData.user.id,
+            email: email
+          });
         } else {
-          console.log(`✅ Perfil actualizado con user_id para: ${email}`);
+          console.log(`✅ Perfil actualizado con user_id para: ${email}`, updateData);
         }
         
         if (!signUpData.user.email_confirmed_at) {
@@ -165,6 +180,11 @@ export function useAgents() {
         } else {
           console.log(`⚡ Usuario ya confirmado: ${email}`);
         }
+      } else {
+        console.error('❌ No se recibió usuario válido de signUp:', {
+          signUpData,
+          signUpError
+        });
       }
 
       toast({
