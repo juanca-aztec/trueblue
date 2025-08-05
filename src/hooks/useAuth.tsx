@@ -31,11 +31,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           // Defer profile fetch to avoid blocking
           setTimeout(async () => {
-            const { data: profile } = await supabase
+            // First try to find profile by user_id
+            let { data: profile } = await supabase
               .from('profiles')
               .select('*')
               .eq('user_id', session.user.id)
               .single();
+
+            // If no profile found by user_id, try to find by email and update user_id
+            if (!profile) {
+              const { data: profileByEmail } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('email', session.user.email)
+                .is('user_id', null)
+                .single();
+
+              if (profileByEmail) {
+                // Update the profile with the user_id
+                const { data: updatedProfile } = await supabase
+                  .from('profiles')
+                  .update({ user_id: session.user.id })
+                  .eq('id', profileByEmail.id)
+                  .select()
+                  .single();
+                
+                profile = updatedProfile;
+              }
+            }
+            
             setProfile(profile);
           }, 0);
         } else {

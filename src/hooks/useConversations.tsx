@@ -12,7 +12,12 @@ export function useConversations() {
 
   const fetchConversations = async () => {
     try {
-      if (!profile) return;
+      if (!profile) {
+        setLoading(false);
+        return;
+      }
+
+      console.log('Fetching conversations for profile:', profile);
 
       let conversationsQuery = supabase
         .from('tb_conversations')
@@ -20,6 +25,7 @@ export function useConversations() {
 
       // Si el usuario es agente (no admin), solo mostrar conversaciones asignadas a él
       if (profile.role === 'agent') {
+        console.log('Filtering conversations for agent:', profile.id);
         conversationsQuery = conversationsQuery.eq('assigned_agent_id', profile.id);
       }
 
@@ -114,6 +120,7 @@ export function useConversations() {
         new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       );
 
+      console.log('Final conversations with messages:', conversationsWithMessages);
       setConversations(conversationsWithMessages);
     } catch (error) {
       console.error('Error fetching conversations:', error);
