@@ -97,6 +97,31 @@ export function useProfiles() {
     }
   };
 
+  const deleteProfile = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchProfiles(); // Refresh the list
+      
+      toast({
+        title: "Perfil eliminado",
+        description: "El perfil se eliminó correctamente",
+      });
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el perfil",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchProfiles();
   }, []);
@@ -106,6 +131,7 @@ export function useProfiles() {
     loading,
     createInvitation,
     updateProfile,
+    deleteProfile,
     refetch: fetchProfiles
   };
 }
