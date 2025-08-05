@@ -9,7 +9,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signInWithMagicLink: (email: string) => Promise<{ error: any; message?: string }>;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string, invitationToken?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -85,7 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            name: name
+            name: name,
+            invitation_token: invitationToken
           }
         }
       });

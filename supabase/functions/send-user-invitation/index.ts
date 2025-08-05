@@ -116,7 +116,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Invitation record created successfully:', invitationData);
 
     // Construct redirect URL with token
-    const redirectUrl = `https://preview--trueblue-chat-management.lovable.app/auth?token=${invitationToken}&email=${encodeURIComponent(email)}`;
+    const redirectUrl = `https://99a96aa0-fcd1-4693-9346-9b678ffa6744.lovableproject.com/auth?token=${invitationToken}&email=${encodeURIComponent(email)}`;
     
     console.log('Sending invitation email to:', email);
     console.log('Redirect URL:', redirectUrl);
