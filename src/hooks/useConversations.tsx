@@ -240,6 +240,28 @@ export function useConversations() {
 
       if (error) throw error;
 
+      // Get the agent profile for immediate local update
+      const { data: agentProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', agentId)
+        .single();
+
+      // Immediately update local state for better UX
+      setConversations(prevConversations => 
+        prevConversations.map(conv => 
+          conv.id === conversationId 
+            ? { 
+                ...conv, 
+                assigned_agent_id: agentId,
+                assigned_agent: agentProfile,
+                status: 'active_human' as ConversationStatus,
+                updated_at: new Date().toISOString()
+              }
+            : conv
+        )
+      );
+
       toast({
         title: "Conversación asignada",
         description: "La conversación se asignó correctamente",
