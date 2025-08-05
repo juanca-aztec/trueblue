@@ -123,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
     try {
       // Use Supabase Auth admin to invite user by email
       const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${supabaseUrl.replace('https://', 'https://preview--trueblue-chat-management.lovable.app')}/auth?token=${invitationToken}&email=${encodeURIComponent(email)}`,
+        redirectTo: `https://trueblu.azteclab.co/auth?token=${invitationToken}&email=${encodeURIComponent(email)}`,
         data: {
           name: name,
           role: role,
