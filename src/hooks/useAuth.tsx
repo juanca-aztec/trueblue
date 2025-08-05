@@ -25,41 +25,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
         
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && event === 'SIGNED_IN') {
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           // Defer profile fetch to avoid blocking
           setTimeout(async () => {
             console.log('🔍 Buscando perfil para usuario:', session.user.id, session.user.email);
             
             // First try to find profile by user_id
-            let { data: profile } = await supabase
+            let { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('*')
               .eq('user_id', session.user.id)
               .single();
 
             console.log('🎯 Perfil encontrado por user_id:', profile);
+            if (profileError && profileError.code !== 'PGRST116') {
+              console.error('❌ Error buscando perfil por user_id:', profileError);
+            }
 
             // If no profile found by user_id, try to find pending profile by email
             if (!profile) {
               console.log('❌ No se encontró perfil por user_id, buscando perfil pendiente por email...');
               
-              const { data: pendingProfile } = await supabase
+              const { data: pendingProfiles, error: pendingError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('email', session.user.email)
                 .is('user_id', null)
-                .eq('status', 'pending')
-                .single();
+                .eq('status', 'pending');
 
-              console.log('📧 Perfil pendiente encontrado por email:', pendingProfile);
+              console.log('📧 Perfiles pendientes encontrados por email:', pendingProfiles);
+              
+              if (pendingError) {
+                console.error('❌ Error buscando perfiles pendientes:', pendingError);
+              }
 
+              const pendingProfile = pendingProfiles?.[0];
               if (pendingProfile) {
-                console.log('🔄 Activando perfil pendiente...');
+                console.log('🔄 Activando perfil pendiente...', pendingProfile.id);
                 
                 // Link the pending profile to this user and activate it
                 const { data: updatedProfile, error: updateError } = await supabase
@@ -74,17 +81,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 
                 if (updateError) {
                   console.error('❌ Error activando perfil pendiente:', updateError);
+                  console.error('❌ Detalles del error:', JSON.stringify(updateError, null, 2));
                 } else {
                   console.log('✅ Perfil pendiente activado exitosamente:', updatedProfile);
                   profile = updatedProfile;
                 }
+              } else {
+                console.log('⚠️ No se encontró perfil pendiente para:', session.user.email);
               }
             }
             
             console.log('🏁 Perfil final cargado en Auth:', profile);
             setProfile(profile);
-          }, 0);
+          }, 100); // Increased timeout slightly for better reliability
         } else {
+          console.log('👤 Usuario no autenticado o evento no relevante');
           setProfile(null);
         }
         
@@ -109,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithMagicLink = async (email: string) => {
-    const redirectUrl = `https://trueblu.azteclab.co/auth`;
+    const redirectUrl = `https://trueblue.azteclab.co/auth`;
     
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -130,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string, invitationToken?: string) => {
     try {
-      const redirectUrl = `https://trueblu.azteclab.co/`;
+      const redirectUrl = `https://trueblue.azteclab.co/`;
       
       const { error } = await supabase.auth.signUp({
         email,
