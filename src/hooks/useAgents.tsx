@@ -70,18 +70,18 @@ export function useAgents() {
         throw invitationError;
       }
 
-      // Enviar el email de invitación
-      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
-        body: {
-          email: email,
-          role: role,
-          token: invitationToken,
-          inviterName: user.user_metadata?.name || user.email
+      // Usar el sistema nativo de invitaciones de Supabase
+      const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
+        redirectTo: `${window.location.origin}/auth?token=${invitationToken}`,
+        data: {
+          name,
+          role,
+          invitation_token: invitationToken
         }
       });
 
-      if (emailError) {
-        console.error('Error sending email:', emailError);
+      if (authError) {
+        console.error('Error sending invitation:', authError);
         toast({
           title: "Agente creado",
           description: `Se creó el agente ${name} pero hubo un problema enviando el email`,
