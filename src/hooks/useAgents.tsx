@@ -31,39 +31,75 @@ export function useAgents() {
 
   const createAgent = async (email: string, name: string, role: 'admin' | 'agent' = 'agent') => {
     try {
-      // Crear el perfil directamente
-      const { data: profileData, error: profileError } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      // Generar UUID temporal para el perfil
+      const tempUserId = crypto.randomUUID();
+      const invitationToken = crypto.randomUUID();
+
+      // Crear el perfil del agente
+      const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          user_id: crypto.randomUUID(), // UUID temporal
+          user_id: tempUserId,
           email: email,
           name: name,
           role: role,
-          status: 'pending'
-        })
-        .select()
-        .single();
+          status: 'pending',
+          created_by: user.id,
+          created_by_name: user.user_metadata?.name || user.email,
+          created_by_email: user.email
+        });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error creating profile:', profileError);
+        throw profileError;
+      }
 
       // Crear la invitación
-      const { data: { user } } = await supabase.auth.getUser();
       const { error: invitationError } = await supabase
         .from('user_invitations')
         .insert({
           email: email,
           role: role,
-          token: crypto.randomUUID(),
-          invited_by: user?.id || '',
+          token: invitationToken,
+          invited_by: user.id,
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         });
 
-      if (invitationError) throw invitationError;
+      if (invitationError) {
+        console.error('Error creating invitation:', invitationError);
+        throw invitationError;
+      }
 
-      toast({
-        title: "Agente creado",
-        description: `Se ha creado el agente ${name} exitosamente`,
+      // Enviar el email de invitación
+      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          email: email,
+          role: role,
+          token: invitationToken,
+          inviterName: user.user_metadata?.name || user.email
+        }
       });
+
+      if (emailError) {
+        console.error('Error sending email:', emailError);
+        // No lanzamos error aquí porque el agente ya se creó
+        toast({
+          title: "Agente creado",
+          description: `Se creó el agente ${name} pero hubo un problema enviando el email`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Agente creado",
+          description: `Se ha creado el agente ${name} y se envió la invitación por email`,
+        });
+      }
 
       await fetchAgents(); // Refrescar la lista
       return { success: true };
@@ -71,7 +107,7 @@ export function useAgents() {
       console.error('Error creating agent:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear el agente",
+        description: `No se pudo crear el agente: ${error.message}`,
         variant: "destructive",
       });
       return { success: false, error };
