@@ -115,28 +115,31 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Invitation record created successfully:', invitationData);
 
-    // Send invitation using Supabase Auth admin
-    console.log('Sending invitation using Supabase Auth to:', email);
+    // Send magic link using Supabase Auth directly
+    console.log('Sending magic link to:', email);
     console.log('Role to assign:', role);
     console.log('Name to assign:', name);
     
     try {
-      // Use Supabase Auth admin to invite user by email
-      const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `https://trueblu.azteclab.co/auth?token=${invitationToken}&email=${encodeURIComponent(email)}`,
-        data: {
-          name: name,
-          role: role,
-          invitation_token: invitationToken
+      // Use Supabase Auth to send a magic link (this uses Supabase's built-in email system)
+      const { data: authData, error: authError } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: `https://trueblu.azteclab.co/auth?token=${invitationToken}&email=${encodeURIComponent(email)}&invitation=true`,
+          data: {
+            name: name,
+            role: role,
+            invitation_token: invitationToken
+          }
         }
       });
 
       if (authError) {
-        console.error('Error sending Supabase invitation:', authError);
+        console.error('Error sending Supabase magic link:', authError);
         throw new Error(`Failed to send invitation: ${authError.message}`);
       }
 
-      console.log('Supabase invitation sent successfully:', authData);
+      console.log('Magic link sent successfully:', authData);
 
     } catch (inviteError: any) {
       console.error('Error sending invitation:', inviteError);
@@ -165,7 +168,7 @@ const handler = async (req: Request): Promise<Response> => {
         success: true, 
         data: {
           invitation: invitationData,
-          invitation_sent: true
+          magic_link_sent: true
         }
       }),
       {

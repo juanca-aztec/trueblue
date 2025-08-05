@@ -32,8 +32,9 @@ export default function Auth() {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const emailParam = urlParams.get('email');
+    const isInvitation = urlParams.get('invitation');
     
-    if (token && emailParam) {
+    if (token && emailParam && isInvitation) {
       setIsInvitationFlow(true);
       setInvitationToken(token);
       setEmail(decodeURIComponent(emailParam));
