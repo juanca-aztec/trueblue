@@ -31,14 +31,34 @@ export function useAgents() {
 
   const createAgent = async (email: string, name: string, role: 'admin' | 'agent' = 'agent') => {
     try {
-      // Usar la función de base de datos para crear el agente
-      const { data, error } = await supabase.rpc('create_agent_profile', {
-        agent_email: email,
-        agent_name: name,
-        agent_role: role
-      });
+      // Crear el perfil directamente
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: crypto.randomUUID(), // UUID temporal
+          email: email,
+          name: name,
+          role: role,
+          status: 'pending'
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Crear la invitación
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error: invitationError } = await supabase
+        .from('user_invitations')
+        .insert({
+          email: email,
+          role: role,
+          token: crypto.randomUUID(),
+          invited_by: user?.id || '',
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        });
+
+      if (invitationError) throw invitationError;
 
       toast({
         title: "Agente creado",

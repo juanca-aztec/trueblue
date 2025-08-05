@@ -262,18 +262,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      activate_agent_profile: {
-        Args: { invitation_token: string; user_auth_id: string }
-        Returns: boolean
-      }
-      create_agent_profile: {
-        Args: {
-          agent_email: string
-          agent_name: string
-          agent_role?: Database["public"]["Enums"]["app_role"]
-        }
-        Returns: string
-      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
