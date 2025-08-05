@@ -26,6 +26,7 @@ export default function Settings() {
   // Auto messages state
   const [newMessage, setNewMessage] = useState({ title: "", message: "" });
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
+  const [editingData, setEditingData] = useState({ title: "", message: "" });
 
   const handleUpdateProfile = async () => {
     if (!user || !profile) return;
@@ -65,12 +66,24 @@ export default function Settings() {
   };
 
   const handleEditMessage = (messageId: string) => {
-    setEditingMessage(messageId);
+    const template = templates.find(t => t.id === messageId);
+    if (template) {
+      setEditingData({ title: template.title, message: template.message });
+      setEditingMessage(messageId);
+    }
   };
 
-  const handleUpdateMessage = (id: string, updates: { title?: string; message?: string }) => {
-    updateTemplate(id, updates);
+  const handleSaveEdit = () => {
+    if (editingMessage) {
+      updateTemplate(editingMessage, editingData);
+      setEditingMessage(null);
+      setEditingData({ title: "", message: "" });
+    }
+  };
+
+  const handleCancelEdit = () => {
     setEditingMessage(null);
+    setEditingData({ title: "", message: "" });
   };
 
   const handleDeleteMessage = (id: string) => {
@@ -192,21 +205,21 @@ export default function Settings() {
                       {editingMessage === message.id ? (
                         <div className="space-y-3">
                           <Input
-                            value={message.title}
-                            onChange={(e) => handleUpdateMessage(message.id, { title: e.target.value })}
+                            value={editingData.title}
+                            onChange={(e) => setEditingData(prev => ({ ...prev, title: e.target.value }))}
                             placeholder="Título de la plantilla"
                           />
                           <Textarea
-                            value={message.message}
-                            onChange={(e) => handleUpdateMessage(message.id, { message: e.target.value })}
+                            value={editingData.message}
+                            onChange={(e) => setEditingData(prev => ({ ...prev, message: e.target.value }))}
                             placeholder="Mensaje de la plantilla"
                             rows={3}
                           />
                           <div className="flex gap-2">
-                            <Button size="sm" onClick={() => setEditingMessage(null)}>
+                            <Button size="sm" onClick={handleSaveEdit}>
                               Guardar
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingMessage(null)}>
+                            <Button size="sm" variant="outline" onClick={handleCancelEdit}>
                               Cancelar
                             </Button>
                           </div>
