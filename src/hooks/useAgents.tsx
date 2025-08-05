@@ -46,10 +46,7 @@ export function useAgents() {
           email: email,
           name: name,
           role: role,
-          status: 'pending',
-          created_by: user.id,
-          created_by_name: user.user_metadata?.name || user.email,
-          created_by_email: user.email
+          status: 'pending'
         });
 
       if (profileError) {
