@@ -8,15 +8,21 @@ import { useMessageTemplates, MessageTemplate } from '@/hooks/useMessageTemplate
 
 interface MessageTemplatesSuggestionsProps {
   onSelectTemplate: (template: MessageTemplate) => void;
+  currentUserName?: string;
   className?: string;
 }
 
 export function MessageTemplatesSuggestions({ 
   onSelectTemplate, 
+  currentUserName = "Agente",
   className = "" 
 }: MessageTemplatesSuggestionsProps) {
   const { templates } = useMessageTemplates();
   const [isOpen, setIsOpen] = useState(false);
+
+  const getPreviewMessage = (message: string) => {
+    return message.replace(/{name}/g, currentUserName);
+  };
 
   if (templates.length === 0) {
     return null;
@@ -62,7 +68,7 @@ export function MessageTemplatesSuggestions({
                       {template.title}
                     </div>
                     <div className="text-xs text-muted-foreground line-clamp-2 w-full">
-                      {template.message}
+                      {getPreviewMessage(template.message)}
                     </div>
                   </div>
                 </Button>

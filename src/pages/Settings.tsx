@@ -144,7 +144,9 @@ export default function Settings() {
               <CardHeader>
                 <CardTitle>Agregar Nueva Plantilla</CardTitle>
                 <CardDescription>
-                  Crea plantillas de respuestas rápidas para usar en conversaciones
+                  Crea plantillas de respuestas rápidas para usar en conversaciones.
+                  <br />
+                  <strong>Variables disponibles:</strong> {"{name}"} - se reemplaza por tu nombre
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

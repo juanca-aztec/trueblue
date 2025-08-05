@@ -41,8 +41,14 @@ export function ChatWindow({
     setSending(false);
   };
 
+  const processTemplateVariables = (template: string) => {
+    // Replace {name} with current user's name
+    return template.replace(/{name}/g, currentUser.name || 'Agente');
+  };
+
   const handleSelectTemplate = (template: MessageTemplate) => {
-    setNewMessage(template.message);
+    const processedMessage = processTemplateVariables(template.message);
+    setNewMessage(processedMessage);
   };
 
   const getSenderIcon = (senderRole: string) => {
@@ -251,6 +257,7 @@ export function ChatWindow({
           {/* Message Templates Suggestions */}
           <MessageTemplatesSuggestions 
             onSelectTemplate={handleSelectTemplate}
+            currentUserName={currentUser.name}
           />
           
           <div className="flex gap-2">

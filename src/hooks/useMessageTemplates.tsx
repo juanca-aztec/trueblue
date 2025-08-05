@@ -10,8 +10,8 @@ export interface MessageTemplate {
 const DEFAULT_TEMPLATES: MessageTemplate[] = [
   { 
     id: "1", 
-    title: "Saludo inicial", 
-    message: "¡Hola! Gracias por contactarnos. ¿En qué podemos ayudarte hoy?" 
+    title: "Saludo personal", 
+    message: "¡Hola! Soy {name}, ¿en qué te puedo ayudar hoy?" 
   },
   { 
     id: "2", 
@@ -20,8 +20,8 @@ const DEFAULT_TEMPLATES: MessageTemplate[] = [
   },
   { 
     id: "3", 
-    title: "Despedida", 
-    message: "Gracias por contactarnos. ¡Que tengas un excelente día!" 
+    title: "Despedida personal", 
+    message: "Gracias por contactarnos. Soy {name} y ha sido un placer ayudarte. ¡Que tengas un excelente día!" 
   },
 ];
 
