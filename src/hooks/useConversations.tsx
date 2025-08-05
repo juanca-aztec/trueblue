@@ -204,6 +204,15 @@ export function useConversations() {
 
       if (error) throw error;
 
+      // Immediately update local state for better UX
+      setConversations(prevConversations => 
+        prevConversations.map(conv => 
+          conv.id === conversationId 
+            ? { ...conv, status, updated_at: new Date().toISOString() }
+            : conv
+        )
+      );
+
       toast({
         title: "Estado actualizado",
         description: "El estado de la conversación se actualizó correctamente",
