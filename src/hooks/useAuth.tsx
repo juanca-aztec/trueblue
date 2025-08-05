@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             }
             
-            console.log('🏁 Perfil final:', profile);
+            console.log('🏁 Perfil final cargado en Auth:', profile);
             setProfile(profile);
           }, 0);
         } else {

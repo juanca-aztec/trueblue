@@ -12,12 +12,18 @@ export function useConversations() {
 
   const fetchConversations = async () => {
     try {
+      console.log('🚀 fetchConversations iniciado');
+      console.log('👤 Profile actual:', profile);
+      
       if (!profile) {
+        console.log('❌ No hay profile, terminando fetch');
         setLoading(false);
         return;
       }
 
-      console.log('Fetching conversations for profile:', profile);
+      console.log('🔍 Fetching conversations for profile:', profile);
+      console.log('🎭 Role del usuario:', profile.role);
+      console.log('🆔 ID del profile:', profile.id);
 
       let conversationsQuery = supabase
         .from('tb_conversations')
@@ -25,8 +31,10 @@ export function useConversations() {
 
       // Si el usuario es agente (no admin), solo mostrar conversaciones asignadas a él
       if (profile.role === 'agent') {
-        console.log('Filtering conversations for agent:', profile.id);
+        console.log('🕵️ Filtering conversations for agent:', profile.id);
         conversationsQuery = conversationsQuery.eq('assigned_agent_id', profile.id);
+      } else {
+        console.log('👑 Usuario admin - mostrar todas las conversaciones');
       }
 
       // Fetch conversations first
