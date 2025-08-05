@@ -1,0 +1,294 @@
+import { useState } from "react";
+import { User, MessageSquare, Palette, Save } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+
+interface AutoMessage {
+  id?: string;
+  title: string;
+  message: string;
+}
+
+export default function Settings() {
+  const { user, profile } = useAuth();
+  const { toast } = useToast();
+  
+  // Profile state
+  const [profileData, setProfileData] = useState({
+    name: profile?.name || "",
+    email: profile?.email || "",
+  });
+
+  // Auto messages state
+  const [autoMessages, setAutoMessages] = useState<AutoMessage[]>([
+    { id: "1", title: "Saludo inicial", message: "¡Hola! Gracias por contactarnos. ¿En qué podemos ayudarte hoy?" },
+    { id: "2", title: "Mensaje de espera", message: "Gracias por tu paciencia. Un agente se pondrá en contacto contigo pronto." },
+    { id: "3", title: "Despedida", message: "Gracias por contactarnos. ¡Que tengas un excelente día!" },
+  ]);
+  
+  const [newMessage, setNewMessage] = useState<AutoMessage>({ title: "", message: "" });
+  const [editingMessage, setEditingMessage] = useState<string | null>(null);
+
+  const handleUpdateProfile = async () => {
+    if (!user || !profile) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: profileData.name,
+          email: profileData.email,
+        })
+        .eq('id', profile.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Perfil actualizado",
+        description: "Tus datos se han actualizado correctamente.",
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el perfil.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddAutoMessage = () => {
+    if (!newMessage.title || !newMessage.message) return;
+    
+    const id = (autoMessages.length + 1).toString();
+    setAutoMessages([...autoMessages, { ...newMessage, id }]);
+    setNewMessage({ title: "", message: "" });
+    
+    toast({
+      title: "Plantilla agregada",
+      description: "La nueva plantilla de mensaje se ha guardado.",
+    });
+  };
+
+  const handleEditMessage = (message: AutoMessage) => {
+    setEditingMessage(message.id || "");
+  };
+
+  const handleUpdateMessage = (id: string, updates: Partial<AutoMessage>) => {
+    setAutoMessages(autoMessages.map(msg => 
+      msg.id === id ? { ...msg, ...updates } : msg
+    ));
+    setEditingMessage(null);
+    
+    toast({
+      title: "Plantilla actualizada",
+      description: "Los cambios se han guardado correctamente.",
+    });
+  };
+
+  const handleDeleteMessage = (id: string) => {
+    setAutoMessages(autoMessages.filter(msg => msg.id !== id));
+    
+    toast({
+      title: "Plantilla eliminada",
+      description: "La plantilla se ha eliminado correctamente.",
+    });
+  };
+
+  return (
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Configuración</h1>
+        <p className="text-muted-foreground">Personaliza tu experiencia en Chatbot Trueblue</p>
+      </div>
+
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="profile" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Perfil
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Mensajes Automáticos
+          </TabsTrigger>
+          <TabsTrigger value="theme" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Tema
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>Información del Perfil</CardTitle>
+              <CardDescription>
+                Actualiza tu información personal
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre</Label>
+                <Input
+                  id="name"
+                  value={profileData.name}
+                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                  placeholder="Tu nombre completo"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={profileData.email}
+                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                  placeholder="tu@email.com"
+                />
+              </div>
+
+              <Button onClick={handleUpdateProfile} className="flex items-center gap-2">
+                <Save className="h-4 w-4" />
+                Guardar Cambios
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="messages">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Agregar Nueva Plantilla</CardTitle>
+                <CardDescription>
+                  Crea plantillas de respuestas rápidas para usar en conversaciones
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="message-title">Título de la plantilla</Label>
+                  <Input
+                    id="message-title"
+                    value={newMessage.title}
+                    onChange={(e) => setNewMessage({ ...newMessage, title: e.target.value })}
+                    placeholder="Ej: Saludo inicial"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="message-content">Mensaje</Label>
+                  <Textarea
+                    id="message-content"
+                    value={newMessage.message}
+                    onChange={(e) => setNewMessage({ ...newMessage, message: e.target.value })}
+                    placeholder="Escribe el mensaje de la plantilla..."
+                    rows={3}
+                  />
+                </div>
+
+                <Button onClick={handleAddAutoMessage} className="flex items-center gap-2">
+                  <Save className="h-4 w-4" />
+                  Agregar Plantilla
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Plantillas Existentes</CardTitle>
+                <CardDescription>
+                  Gestiona tus plantillas de mensajes automáticos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {autoMessages.map((message) => (
+                    <div key={message.id} className="border rounded-lg p-4 space-y-3">
+                      {editingMessage === message.id ? (
+                        <div className="space-y-3">
+                          <Input
+                            value={message.title}
+                            onChange={(e) => handleUpdateMessage(message.id!, { title: e.target.value })}
+                            placeholder="Título de la plantilla"
+                          />
+                          <Textarea
+                            value={message.message}
+                            onChange={(e) => handleUpdateMessage(message.id!, { message: e.target.value })}
+                            placeholder="Mensaje de la plantilla"
+                            rows={3}
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => setEditingMessage(null)}>
+                              Guardar
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingMessage(null)}>
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">{message.title}</h4>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditMessage(message)}
+                              >
+                                Editar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteMessage(message.id!)}
+                              >
+                                Eliminar
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-2">{message.message}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="theme">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuración de Tema</CardTitle>
+              <CardDescription>
+                Personaliza la apariencia de la aplicación
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Tema de la aplicación</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Cambia entre modo claro, oscuro o automático
+                  </p>
+                </div>
+                <ThemeToggle />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

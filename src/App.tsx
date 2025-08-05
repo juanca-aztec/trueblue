@@ -9,10 +9,11 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
+import Settings from "./pages/Settings";
 import Placeholder from "./pages/Placeholder";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import { BarChart3, Settings } from "lucide-react";
+import { BarChart3, Settings as SettingsIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const queryClient = new QueryClient();
@@ -119,11 +120,7 @@ const App = () => (
               <Route path="/configuracion" element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <Placeholder 
-                      title="Configuración" 
-                      description="Las opciones de configuración estarán disponibles pronto."
-                      icon={<Settings className="h-6 w-6 text-primary" />}
-                    />
+                    <Settings />
                   </AppLayout>
                 </ProtectedRoute>
               } />
