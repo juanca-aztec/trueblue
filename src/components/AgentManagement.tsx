@@ -9,11 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useProfiles } from "@/hooks/useProfiles";
 import { useAuth } from "@/hooks/useAuth";
 import { Profile } from "@/types/database";
-import { Plus, Mail, User, Edit, UserCheck, UserX, Trash2, UserPlus } from "lucide-react";
+import { Plus, Mail, User, Edit, UserCheck, UserX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AgentManagement() {
-  const { profiles, loading, createInvitation, updateProfile, deleteProfile } = useProfiles();
+  const { profiles, loading, createInvitation, updateProfile } = useProfiles();
   const { profile } = useAuth();
   const { toast } = useToast();
   
@@ -87,12 +87,6 @@ export default function AgentManagement() {
       title: "Estado actualizado",
       description: `El agente ${agent.name} ahora está ${newStatus === 'active' ? 'activo' : 'inactivo'}`,
     });
-  };
-
-  const handleDeleteAgent = async (agent: Profile) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar al agente ${agent.name}? Esta acción no se puede deshacer.`)) {
-      await deleteProfile(agent.id);
-    }
   };
 
   return (
@@ -175,12 +169,6 @@ export default function AgentManagement() {
                       <Mail className="h-3 w-3" />
                       {agent.email}
                     </div>
-                    {agent.created_by_name && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <UserPlus className="h-3 w-3" />
-                        Creado por: {agent.created_by_name}
-                      </div>
-                    )}
                   </div>
                 </div>
                 
@@ -207,28 +195,17 @@ export default function AgentManagement() {
                     </Button>
                     
                     {agent.id !== profile?.id && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleStatus(agent)}
-                        >
-                          {agent.status === 'active' ? (
-                            <UserX className="h-3 w-3" />
-                          ) : (
-                            <UserCheck className="h-3 w-3" />
-                          )}
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteAgent(agent)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleStatus(agent)}
+                      >
+                        {agent.status === 'active' ? (
+                          <UserX className="h-3 w-3" />
+                        ) : (
+                          <UserCheck className="h-3 w-3" />
+                        )}
+                      </Button>
                     )}
                   </div>
                 </div>
