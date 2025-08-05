@@ -70,29 +70,18 @@ export function useAgents() {
         throw invitationError;
       }
 
-      // Usar el sistema nativo de invitaciones de Supabase
-      const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${window.location.origin}/auth?token=${invitationToken}`,
-        data: {
-          name,
-          role,
-          invitation_token: invitationToken
-        }
-      });
+      // Usar el sistema nativo de signup de Supabase con datos de invitación
+      const redirectUrl = `${window.location.origin}/auth?token=${invitationToken}`;
+      
+      // En lugar de inviteUserByEmail, simplemente guardamos la invitación 
+      // El usuario recibirá un email cuando haga signup con estos datos
+      console.log(`Invitación creada para ${email} con token: ${invitationToken}`);
+      console.log(`URL de redirección: ${redirectUrl}`);
 
-      if (authError) {
-        console.error('Error sending invitation:', authError);
-        toast({
-          title: "Agente creado",
-          description: `Se creó el agente ${name} pero hubo un problema enviando el email`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Agente creado",
-          description: `Se ha creado el agente ${name} y se envió la invitación por email`,
-        });
-      }
+      toast({
+        title: "Agente creado",
+        description: `Se ha creado el agente ${name}. El usuario debe registrarse usando el email ${email}`,
+      });
 
       await fetchAgents();
       return { success: true };
