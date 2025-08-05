@@ -35,6 +35,7 @@ export function useConversations() {
         conversationsQuery = conversationsQuery.eq('assigned_agent_id', profile.id);
       } else {
         console.log('👑 Usuario admin - mostrar todas las conversaciones');
+        // Los admins ven todas las conversaciones, no aplicamos filtro
       }
 
       // Fetch conversations first
