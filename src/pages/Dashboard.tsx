@@ -98,6 +98,7 @@ export default function Dashboard() {
             conversations={conversations}
             selectedConversationId={selectedConversationId}
             onSelectConversation={handleSelectConversation}
+            agents={profiles}
           />
         </div>
 

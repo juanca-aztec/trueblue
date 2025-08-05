@@ -1,30 +1,49 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ConversationWithMessages } from "@/types/database";
+import { ConversationWithMessages, Profile } from "@/types/database";
 import { ConversationList } from "./ConversationList";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ConversationTabsProps {
   conversations: ConversationWithMessages[];
   selectedConversationId: string | null;
   onSelectConversation: (conversation: ConversationWithMessages) => void;
+  agents: Profile[];
 }
 
 export function ConversationTabs({
   conversations,
   selectedConversationId,
   onSelectConversation,
+  agents,
 }: ConversationTabsProps) {
+  const { profile } = useAuth();
   const [activeFilter, setActiveFilter] = useState<string>("todas");
+  const [agentFilter, setAgentFilter] = useState<string>("todos");
+  
+  const isAdmin = profile?.role === 'admin';
   
   const activeConversations = conversations.filter(
     conv => conv.status === 'active_ai' || conv.status === 'active_human' || conv.status === 'pending_human'
   );
   
   const filteredActiveConversations = activeConversations.filter(conv => {
-    if (activeFilter === "todas") return true;
-    return conv.status === activeFilter;
+    // Filter by status
+    if (activeFilter !== "todas" && conv.status !== activeFilter) {
+      return false;
+    }
+    
+    // Filter by agent (only for admins)
+    if (isAdmin && agentFilter !== "todos") {
+      if (agentFilter === "sin_asignar") {
+        return !conv.assigned_agent_id;
+      }
+      return conv.assigned_agent_id === agentFilter;
+    }
+    
+    return true;
   });
   
   const closedConversations = conversations.filter(
@@ -48,7 +67,8 @@ export function ConversationTabs({
           </div>
           
           <TabsContent value="activas" className="flex-1 m-0 p-0 flex flex-col">
-            <div className="p-4 border-b">
+            <div className="p-4 border-b space-y-3">
+              {/* Status Filter */}
               <Select value={activeFilter} onValueChange={setActiveFilter}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Filtrar por estado" />
@@ -60,6 +80,24 @@ export function ConversationTabs({
                   <SelectItem value="active_human">Humano Activo ({activeConversations.filter(c => c.status === 'active_human').length})</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Agent Filter - Only visible for admins */}
+              {isAdmin && (
+                <Select value={agentFilter} onValueChange={setAgentFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Filtrar por agente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los agentes</SelectItem>
+                    <SelectItem value="sin_asignar">Sin asignar</SelectItem>
+                    {agents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name} ({agent.role})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="flex-1">
               <ConversationList
