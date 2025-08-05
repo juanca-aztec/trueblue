@@ -115,42 +115,83 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Invitation record created successfully:', invitationData);
 
-    // Send magic link using Supabase Auth directly
     console.log('Sending magic link to:', email);
     console.log('Role to assign:', role);
     console.log('Name to assign:', name);
     
     try {
-      // Use Supabase Auth to send a magic link (this uses Supabase's built-in email system)
-      const { data: authData, error: authError } = await supabase.auth.signInWithOtp({
+      // Create a temporary user to send the magic link
+      const tempPassword = crypto.randomUUID();
+      
+      // First try to sign up the user (this will send a confirmation email)
+      const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
         email: email,
-        options: {
-          emailRedirectTo: `https://trueblu.azteclab.co/auth?token=${invitationToken}&email=${encodeURIComponent(email)}&invitation=true`,
-          data: {
-            name: name,
-            role: role,
-            invitation_token: invitationToken
-          }
+        password: tempPassword,
+        email_confirm: false, // Don't auto-confirm
+        user_metadata: {
+          name: name,
+          role: role,
+          invitation_token: invitationToken
         }
       });
 
-      if (authError) {
-        console.error('Error sending Supabase magic link:', authError);
-        throw new Error(`Failed to send invitation: ${authError.message}`);
+      if (signUpError) {
+        console.error('Error creating user:', signUpError);
+        
+        // If user already exists, send a magic link instead
+        if (signUpError.message?.includes('already registered') || signUpError.message?.includes('already exists')) {
+          console.log('User already exists, sending magic link instead');
+          
+          const { data: otpData, error: otpError } = await supabase.auth.signInWithOtp({
+            email: email,
+            options: {
+              emailRedirectTo: `https://trueblu.azteclab.co/auth?token=${invitationToken}&email=${encodeURIComponent(email)}&invitation=true`,
+              data: {
+                name: name,
+                role: role,
+                invitation_token: invitationToken
+              }
+            }
+          });
+
+          if (otpError) {
+            throw new Error(`Failed to send magic link: ${otpError.message}`);
+          }
+          
+          console.log('Magic link sent successfully:', otpData);
+        } else {
+          throw new Error(`Failed to create user: ${signUpError.message}`);
+        }
+      } else {
+        console.log('User created successfully:', signUpData);
+        
+        // Now send magic link for login
+        const { data: otpData, error: otpError } = await supabase.auth.signInWithOtp({
+          email: email,
+          options: {
+            emailRedirectTo: `https://trueblu.azteclab.co/auth?token=${invitationToken}&email=${encodeURIComponent(email)}&invitation=true`,
+            data: {
+              name: name,
+              role: role,
+              invitation_token: invitationToken
+            }
+          }
+        });
+
+        if (otpError) {
+          console.warn('Warning: User created but magic link failed:', otpError);
+        } else {
+          console.log('Magic link sent successfully:', otpData);
+        }
       }
 
-      console.log('Magic link sent successfully:', authData);
-
     } catch (inviteError: any) {
-      console.error('Error sending invitation:', inviteError);
-      
-      // Don't clean up the invitation record - keep it for manual processing
-      console.log('Invitation sending failed, but keeping invitation record for manual processing');
+      console.error('Error in invitation process:', inviteError);
       
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Failed to send invitation. Please try again.',
+          error: 'No se pudo enviar la invitación por email: Edge Function returned a non-2xx status code',
           details: {
             message: inviteError.message
           }
@@ -168,7 +209,7 @@ const handler = async (req: Request): Promise<Response> => {
         success: true, 
         data: {
           invitation: invitationData,
-          magic_link_sent: true
+          user_setup_complete: true
         }
       }),
       {
