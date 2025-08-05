@@ -22,78 +22,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for invitation token in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const invitationToken = urlParams.get('token');
-    const emailParam = urlParams.get('email');
-    
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
+        if (session?.user && event === 'SIGNED_IN') {
           // Defer profile fetch to avoid blocking
           setTimeout(async () => {
             console.log('🔍 Buscando perfil para usuario:', session.user.id, session.user.email);
             
-            // Check if this is an invitation flow
-            if (invitationToken && emailParam) {
-              console.log('🎫 Procesando invitación con token:', invitationToken);
-              
-              try {
-                // Validate and use the invitation token
-                const { data: roleData, error: tokenError } = await supabase
-                  .rpc('use_invitation_token', {
-                    token_input: invitationToken,
-                    email_input: emailParam
-                  });
-
-                if (tokenError || !roleData || roleData.length === 0) {
-                  console.error('❌ Error procesando token de invitación:', tokenError);
-                } else {
-                  console.log('✅ Token de invitación procesado exitosamente');
-                  
-                  // Find and update the profile
-                  const { data: profileByEmail, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('email', emailParam)
-                    .single();
-
-                  if (profileByEmail && !profileError) {
-                    console.log('📧 Perfil encontrado por email para invitación:', profileByEmail);
-                    
-                    // Update profile with user_id and set status to active
-                    const { data: updatedProfile, error: updateError } = await supabase
-                      .from('profiles')
-                      .update({ 
-                        user_id: session.user.id,
-                        status: 'active'
-                      })
-                      .eq('id', profileByEmail.id)
-                      .select()
-                      .single();
-                    
-                    if (updateError) {
-                      console.error('❌ Error actualizando perfil de invitación:', updateError);
-                    } else {
-                      console.log('✅ Perfil de invitación actualizado exitosamente:', updatedProfile);
-                      setProfile(updatedProfile);
-                      
-                      // Clean URL parameters
-                      window.history.replaceState({}, document.title, window.location.pathname);
-                      return;
-                    }
-                  }
-                }
-              } catch (error) {
-                console.error('❌ Error en flujo de invitación:', error);
-              }
-            }
-            
-            // Regular profile flow
             // First try to find profile by user_id
             let { data: profile } = await supabase
               .from('profiles')
@@ -103,37 +44,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             console.log('🎯 Perfil encontrado por user_id:', profile);
 
-            // If no profile found by user_id, try to find by email and update user_id
+            // If no profile found by user_id, try to find pending profile by email
             if (!profile) {
-              console.log('❌ No se encontró perfil por user_id, buscando por email...');
+              console.log('❌ No se encontró perfil por user_id, buscando perfil pendiente por email...');
               
-              const { data: profileByEmail } = await supabase
+              const { data: pendingProfile } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('email', session.user.email)
                 .is('user_id', null)
+                .eq('status', 'pending')
                 .single();
 
-              console.log('📧 Perfil encontrado por email:', profileByEmail);
+              console.log('📧 Perfil pendiente encontrado por email:', pendingProfile);
 
-              if (profileByEmail) {
-                console.log('🔄 Actualizando perfil con user_id...');
+              if (pendingProfile) {
+                console.log('🔄 Activando perfil pendiente...');
                 
-                // Update the profile with the user_id and set status to active
+                // Link the pending profile to this user and activate it
                 const { data: updatedProfile, error: updateError } = await supabase
                   .from('profiles')
                   .update({ 
                     user_id: session.user.id,
                     status: 'active'
                   })
-                  .eq('id', profileByEmail.id)
+                  .eq('id', pendingProfile.id)
                   .select()
                   .single();
                 
                 if (updateError) {
-                  console.error('❌ Error actualizando perfil:', updateError);
+                  console.error('❌ Error activando perfil pendiente:', updateError);
                 } else {
-                  console.log('✅ Perfil actualizado exitosamente:', updatedProfile);
+                  console.log('✅ Perfil pendiente activado exitosamente:', updatedProfile);
                   profile = updatedProfile;
                 }
               }
@@ -145,15 +87,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setProfile(null);
         }
+        
         setLoading(false);
       }
     );
 
-    // THEN check for existing session
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      
+      if (session?.user) {
+        // Initial profile fetch will be handled by the auth state change
+        setLoading(false);
+      } else {
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();

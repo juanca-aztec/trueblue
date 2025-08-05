@@ -37,16 +37,22 @@ export function useAgents() {
         throw new Error('Usuario no autenticado');
       }
 
-      const invitationToken = crypto.randomUUID();
+      setLoading(true);
 
-      // Crear el perfil del agente sin user_id (se asignará cuando acepte la invitación)
+      console.log(`🚀 Iniciando creación de agente: ${email}, ${name}, ${role}`);
+
+      // Crear perfil en estado pendiente
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
           email: email,
           name: name,
           role: role,
-          status: 'pending'
+          status: 'pending',
+          user_id: null, // Se asignará cuando el usuario confirme su email
+          created_by: user.id,
+          created_by_name: user.user_metadata?.name || user.email,
+          created_by_email: user.email
         });
 
       if (profileError) {
@@ -54,24 +60,8 @@ export function useAgents() {
         throw profileError;
       }
 
-      // Crear la invitación
-      const { error: invitationError } = await supabase
-        .from('user_invitations')
-        .insert({
-          email: email,
-          role: role,
-          token: invitationToken,
-          invited_by: user.id,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        });
-
-      if (invitationError) {
-        console.error('Error creating invitation:', invitationError);
-        throw invitationError;
-      }
-
       // Crear usuario en Supabase Auth y enviar email de confirmación automáticamente
-      const redirectUrl = `${window.location.origin}/auth?token=${invitationToken}&email=${email}`;
+      const redirectUrl = `${window.location.origin}/auth`;
       
       const { error: signUpError } = await supabase.auth.signUp({
         email: email,
@@ -79,7 +69,6 @@ export function useAgents() {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            invitation_token: invitationToken,
             name: name,
             role: role
           }
@@ -91,12 +80,12 @@ export function useAgents() {
         throw signUpError;
       }
 
-      console.log(`✅ Usuario creado y email enviado a ${email} con token: ${invitationToken}`);
+      console.log(`✅ Usuario creado y email enviado a ${email}`);
       console.log(`🔗 URL de redirección: ${redirectUrl}`);
 
       toast({
-        title: "Invitación enviada",
-        description: `Se ha enviado un email de confirmación a ${email} para completar el registro`,
+        title: "Agente creado",
+        description: `Se ha enviado un email de confirmación a ${email} para activar su cuenta`,
       });
 
       await fetchAgents();

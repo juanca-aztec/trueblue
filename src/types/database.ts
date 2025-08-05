@@ -7,7 +7,6 @@ export type AppRole = Database['public']['Enums']['app_role'];
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type Conversation = Database['public']['Tables']['tb_conversations']['Row'];
 export type Message = Database['public']['Tables']['tb_messages']['Row'];
-export type UserInvitation = Database['public']['Tables']['user_invitations']['Row'];
 
 export interface ConversationWithMessages extends Conversation {
   messages: Message[];

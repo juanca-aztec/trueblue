@@ -216,47 +216,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_invitations: {
-        Row: {
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          invited_by: string
-          role: Database["public"]["Enums"]["app_role"]
-          token: string
-          used: boolean
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          expires_at?: string
-          id?: string
-          invited_by: string
-          role?: Database["public"]["Enums"]["app_role"]
-          token?: string
-          used?: boolean
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          invited_by?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          token?: string
-          used?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_invitations_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
@@ -276,16 +235,6 @@ export type Database = {
       }
       is_user_active: {
         Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      use_invitation_token: {
-        Args: { token_input: string; email_input: string }
-        Returns: {
-          role_assigned: Database["public"]["Enums"]["app_role"]
-        }[]
-      }
-      validate_invitation_token: {
-        Args: { token_input: string; email_input: string }
         Returns: boolean
       }
     }
