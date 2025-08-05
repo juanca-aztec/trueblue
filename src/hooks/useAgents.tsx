@@ -37,15 +37,12 @@ export function useAgents() {
         throw new Error('Usuario no autenticado');
       }
 
-      // Generar UUID temporal para el perfil
-      const tempUserId = crypto.randomUUID();
       const invitationToken = crypto.randomUUID();
 
-      // Crear el perfil del agente
+      // Crear el perfil del agente sin user_id (se asignará cuando acepte la invitación)
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          user_id: tempUserId,
           email: email,
           name: name,
           role: role,
@@ -88,7 +85,6 @@ export function useAgents() {
 
       if (emailError) {
         console.error('Error sending email:', emailError);
-        // No lanzamos error aquí porque el agente ya se creó
         toast({
           title: "Agente creado",
           description: `Se creó el agente ${name} pero hubo un problema enviando el email`,
@@ -101,7 +97,7 @@ export function useAgents() {
         });
       }
 
-      await fetchAgents(); // Refrescar la lista
+      await fetchAgents();
       return { success: true };
     } catch (error) {
       console.error('Error creating agent:', error);
