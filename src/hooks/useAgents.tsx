@@ -70,17 +70,32 @@ export function useAgents() {
         throw invitationError;
       }
 
-      // Usar el sistema nativo de signup de Supabase con datos de invitación
-      const redirectUrl = `${window.location.origin}/auth?token=${invitationToken}`;
+      // Enviar magic link con token de invitación incluido
+      const redirectUrl = `${window.location.origin}/auth?token=${invitationToken}&email=${email}`;
       
-      // En lugar de inviteUserByEmail, simplemente guardamos la invitación 
-      // El usuario recibirá un email cuando haga signup con estos datos
-      console.log(`Invitación creada para ${email} con token: ${invitationToken}`);
-      console.log(`URL de redirección: ${redirectUrl}`);
+      const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            invitation_token: invitationToken,
+            name: name,
+            role: role
+          }
+        }
+      });
+
+      if (magicLinkError) {
+        console.error('Error sending magic link:', magicLinkError);
+        throw magicLinkError;
+      }
+
+      console.log(`✅ Magic link enviado a ${email} con token: ${invitationToken}`);
+      console.log(`🔗 URL de redirección: ${redirectUrl}`);
 
       toast({
-        title: "Agente creado",
-        description: `Se ha creado el agente ${name}. El usuario debe registrarse usando el email ${email}`,
+        title: "Invitación enviada",
+        description: `Se ha enviado un enlace mágico a ${email} para completar el registro`,
       });
 
       await fetchAgents();
@@ -89,7 +104,7 @@ export function useAgents() {
       console.error('Error creating agent:', error);
       toast({
         title: "Error",
-        description: `No se pudo crear el agente: ${error.message}`,
+        description: `No se pudo enviar la invitación: ${error.message}`,
         variant: "destructive",
       });
       return { success: false, error };
