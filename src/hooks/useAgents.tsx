@@ -146,6 +146,19 @@ export function useAgents() {
           email_confirmed_at: signUpData.user.email_confirmed_at
         });
         
+        // Actualizar el perfil con el user_id del usuario recién creado
+        console.log(`🔄 Actualizando perfil con user_id: ${signUpData.user.id}`);
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ user_id: signUpData.user.id })
+          .eq('email', email);
+
+        if (updateError) {
+          console.error('❌ Error actualizando user_id en perfil:', updateError);
+        } else {
+          console.log(`✅ Perfil actualizado con user_id para: ${email}`);
+        }
+        
         if (!signUpData.user.email_confirmed_at) {
           console.log(`📮 Email de confirmación enviado a: ${email}`);
           console.log(`🔗 URL de redirección configurada: ${redirectUrl}`);
