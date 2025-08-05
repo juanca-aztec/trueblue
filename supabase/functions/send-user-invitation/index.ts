@@ -39,16 +39,53 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Initialize Supabase client with service role key for admin operations
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     });
 
+    // Get the current user from the JWT token
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization header required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Verify the requesting user is an admin using the admin client
+    const { data: { user }, error: userError } = await adminClient.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Check if the user has admin role
+    const { data: profile, error: profileError } = await adminClient
+      .from('profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError || !profile || profile.role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Insufficient permissions. Admin role required.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const inviterUserId = user.id;
+
     // Check for existing invitation
     console.log('Checking for existing invitation for:', email);
-    const { data: existingInvitation, error: checkError } = await supabase
+    const { data: existingInvitation, error: checkError } = await adminClient
       .from('user_invitations')
       .select('*')
       .eq('email', email)
@@ -86,13 +123,13 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Create invitation record first
     console.log('Creating invitation record for:', email, 'with role:', role, 'and name:', name);
-    const { data: invitationData, error: invitationError } = await supabase
+    const { data: invitationData, error: invitationError } = await adminClient
       .from('user_invitations')
       .insert({
         email: email,
         role: role,
         token: invitationToken,
-        invited_by: '703427fd-17f4-476a-be45-add2585c584f', // Admin user juanca@azteclab.co
+        invited_by: inviterUserId, // Use the authenticated admin user ID
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
       })
       .select()
@@ -124,7 +161,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Name to assign:', name);
     
     // Send invitation email using Supabase admin inviteUserByEmail
-    const { data: inviteData, error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
+    const { data: inviteData, error: emailError } = await adminClient.auth.admin.inviteUserByEmail(email, {
       redirectTo: redirectUrl,
       data: {
         role: role,
