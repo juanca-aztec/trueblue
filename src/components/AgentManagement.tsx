@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useProfiles } from "@/hooks/useProfiles";
+import { useAgents } from "@/hooks/useAgents";
 import { useAuth } from "@/hooks/useAuth";
 import { Profile } from "@/types/database";
 import { Plus, Mail, User, Edit, UserCheck, UserX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AgentManagement() {
-  const { profiles, loading, createInvitation, updateProfile } = useProfiles();
+  const { agents, loading, createAgent, updateAgent, toggleAgentStatus } = useAgents();
   const { profile } = useAuth();
   const { toast } = useToast();
   
@@ -54,11 +54,13 @@ export default function AgentManagement() {
   const handleInviteAgent = async () => {
     if (!inviteEmail || !inviteName) return;
     
-    await createInvitation(inviteEmail, inviteRole, inviteName);
-    setInviteEmail('');
-    setInviteName('');
-    setInviteRole('agent');
-    setIsInviteOpen(false);
+    const result = await createAgent(inviteEmail, inviteName, inviteRole);
+    if (result.success) {
+      setInviteEmail('');
+      setInviteName('');
+      setInviteRole('agent');
+      setIsInviteOpen(false);
+    }
   };
 
   const handleEditAgent = (agent: Profile) => {
@@ -71,22 +73,19 @@ export default function AgentManagement() {
   const handleUpdateAgent = async () => {
     if (!selectedAgent) return;
     
-    await updateProfile(selectedAgent.id, {
+    const result = await updateAgent(selectedAgent.id, {
       name: editName,
       role: editRole
     });
-    setIsEditOpen(false);
-    setSelectedAgent(null);
+    
+    if (result.success) {
+      setIsEditOpen(false);
+      setSelectedAgent(null);
+    }
   };
 
   const handleToggleStatus = async (agent: Profile) => {
-    const newStatus = agent.status === 'active' ? 'inactive' : 'active';
-    await updateProfile(agent.id, { status: newStatus });
-    
-    toast({
-      title: "Estado actualizado",
-      description: `El agente ${agent.name} ahora está ${newStatus === 'active' ? 'activo' : 'inactivo'}`,
-    });
+    await toggleAgentStatus(agent.id, agent.status);
   };
 
   return (
@@ -151,7 +150,7 @@ export default function AgentManagement() {
       </div>
 
       <div className="grid gap-4">
-        {profiles.map((agent) => (
+        {agents.map((agent) => (
           <Card key={agent.id}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">

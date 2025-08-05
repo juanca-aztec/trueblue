@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
-import { useProfiles } from '@/hooks/useProfiles';
+import { useAgents } from '@/hooks/useAgents';
 import { ConversationTabs } from '@/components/ConversationTabs';
 import { ChatWindow } from '@/components/ChatWindow';
 import { ConversationWithMessages } from '@/types/database';
@@ -11,7 +11,7 @@ import { MessageSquare, Users, Clock, CheckCircle } from 'lucide-react';
 export default function Dashboard() {
   const { profile } = useAuth();
   const { conversations, loading, sendMessage, updateConversationStatus, assignConversation } = useConversations();
-  const { profiles } = useProfiles();
+  const { agents } = useAgents();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
   // Keep selectedConversation synchronized with conversations updates
@@ -98,7 +98,7 @@ export default function Dashboard() {
             conversations={conversations}
             selectedConversationId={selectedConversationId}
             onSelectConversation={handleSelectConversation}
-            agents={profiles}
+            agents={agents}
           />
         </div>
 
@@ -110,7 +110,7 @@ export default function Dashboard() {
                 <ChatWindow
                   conversation={selectedConversation}
                   currentUser={profile!}
-                  agents={profiles}
+                  agents={agents}
                   onSendMessage={sendMessage}
                   onUpdateStatus={updateConversationStatus}
                   onAssignAgent={assignConversation}
