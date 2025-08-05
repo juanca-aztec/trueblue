@@ -31,6 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           // Defer profile fetch to avoid blocking
           setTimeout(async () => {
+            console.log('🔍 Buscando perfil para usuario:', session.user.id, session.user.email);
+            
             // First try to find profile by user_id
             let { data: profile } = await supabase
               .from('profiles')
@@ -38,8 +40,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .eq('user_id', session.user.id)
               .single();
 
+            console.log('🎯 Perfil encontrado por user_id:', profile);
+
             // If no profile found by user_id, try to find by email and update user_id
             if (!profile) {
+              console.log('❌ No se encontró perfil por user_id, buscando por email...');
+              
               const { data: profileByEmail } = await supabase
                 .from('profiles')
                 .select('*')
@@ -47,19 +53,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .is('user_id', null)
                 .single();
 
+              console.log('📧 Perfil encontrado por email:', profileByEmail);
+
               if (profileByEmail) {
+                console.log('🔄 Actualizando perfil con user_id...');
+                
                 // Update the profile with the user_id
-                const { data: updatedProfile } = await supabase
+                const { data: updatedProfile, error: updateError } = await supabase
                   .from('profiles')
                   .update({ user_id: session.user.id })
                   .eq('id', profileByEmail.id)
                   .select()
                   .single();
                 
-                profile = updatedProfile;
+                if (updateError) {
+                  console.error('❌ Error actualizando perfil:', updateError);
+                } else {
+                  console.log('✅ Perfil actualizado exitosamente:', updatedProfile);
+                  profile = updatedProfile;
+                }
               }
             }
             
+            console.log('🏁 Perfil final:', profile);
             setProfile(profile);
           }, 0);
         } else {
