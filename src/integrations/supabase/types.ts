@@ -117,6 +117,8 @@ export type Database = {
       }
       tb_messages: {
         Row: {
+          agent_email: string | null
+          agent_name: string | null
           content: string
           conversation_id: string
           created_at: string
@@ -127,6 +129,8 @@ export type Database = {
           sender_role: Database["public"]["Enums"]["message_sender_role"]
         }
         Insert: {
+          agent_email?: string | null
+          agent_name?: string | null
           content: string
           conversation_id: string
           created_at?: string
@@ -137,6 +141,8 @@ export type Database = {
           sender_role: Database["public"]["Enums"]["message_sender_role"]
         }
         Update: {
+          agent_email?: string | null
+          agent_name?: string | null
           content?: string
           conversation_id?: string
           created_at?: string
