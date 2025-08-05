@@ -29,18 +29,19 @@ export function useProfiles() {
     }
   };
 
-  const createInvitation = async (email: string, role: 'admin' | 'agent') => {
+  const createInvitation = async (email: string, role: 'admin' | 'agent', name: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
-      console.log('Creating invitation for:', email, 'with role:', role);
+      console.log('Creating invitation for:', email, 'with role:', role, 'and name:', name);
       
       // Call Edge Function to send invitation using Supabase native system
       const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-user-invitation', {
         body: {
           email,
-          role
+          role,
+          name
         }
       });
 

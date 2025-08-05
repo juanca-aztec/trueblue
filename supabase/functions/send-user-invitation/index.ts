@@ -9,6 +9,7 @@ const corsHeaders = {
 interface InvitationRequest {
   email: string;
   role: string;
+  name: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -18,9 +19,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, role }: InvitationRequest = await req.json();
+    const { email, role, name }: InvitationRequest = await req.json();
 
-    console.log('Edge function received request:', { email, role });
+    console.log('Edge function received request:', { email, role, name });
 
     // Validate required environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -84,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
     const invitationToken = crypto.randomUUID();
     
     // Create invitation record first
-    console.log('Creating invitation record for:', email, 'with role:', role);
+    console.log('Creating invitation record for:', email, 'with role:', role, 'and name:', name);
     const { data: invitationData, error: invitationError } = await supabase
       .from('user_invitations')
       .insert({
@@ -120,12 +121,14 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Sending invitation email to:', email);
     console.log('Redirect URL:', redirectUrl);
     console.log('Role to assign:', role);
+    console.log('Name to assign:', name);
     
     // Send invitation email using Supabase admin inviteUserByEmail
     const { data: inviteData, error: emailError } = await supabase.auth.admin.inviteUserByEmail(email, {
       redirectTo: redirectUrl,
       data: {
         role: role,
+        name: name,
         invitation_token: invitationToken
       }
     });

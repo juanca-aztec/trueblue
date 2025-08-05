@@ -23,6 +23,7 @@ export default function AgentManagement() {
   
   // Invite form state
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'agent'>('agent');
   
   // Edit form state
@@ -51,10 +52,11 @@ export default function AgentManagement() {
   }
 
   const handleInviteAgent = async () => {
-    if (!inviteEmail) return;
+    if (!inviteEmail || !inviteName) return;
     
-    await createInvitation(inviteEmail, inviteRole);
+    await createInvitation(inviteEmail, inviteRole, inviteName);
     setInviteEmail('');
+    setInviteName('');
     setInviteRole('agent');
     setIsInviteOpen(false);
   };
@@ -103,6 +105,16 @@ export default function AgentManagement() {
               <DialogTitle>Invitar Nuevo Agente</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              <div>
+                <Label htmlFor="invite-name">Nombre</Label>
+                <Input
+                  id="invite-name"
+                  type="text"
+                  placeholder="Nombre del agente"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                />
+              </div>
               <div>
                 <Label htmlFor="invite-email">Email</Label>
                 <Input
