@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ConversationWithMessages, Profile, ConversationStatus } from '@/types/database';
 import { Send, User, Bot, MessageSquare } from 'lucide-react';
+import { MessageTemplatesSuggestions } from '@/components/MessageTemplatesSuggestions';
+import { MessageTemplate } from '@/hooks/useMessageTemplates';
 
 interface ChatWindowProps {
   conversation: ConversationWithMessages;
@@ -37,6 +39,10 @@ export function ChatWindow({
     await onSendMessage(conversation.id, newMessage.trim(), currentUser.id);
     setNewMessage('');
     setSending(false);
+  };
+
+  const handleSelectTemplate = (template: MessageTemplate) => {
+    setNewMessage(template.message);
   };
 
   const getSenderIcon = (senderRole: string) => {
@@ -241,7 +247,12 @@ export function ChatWindow({
 
       {/* Message Input */}
       <Card className="mt-4">
-        <CardContent className="p-4">
+        <CardContent className="p-4 space-y-3">
+          {/* Message Templates Suggestions */}
+          <MessageTemplatesSuggestions 
+            onSelectTemplate={handleSelectTemplate}
+          />
+          
           <div className="flex gap-2">
             <Textarea
               value={newMessage}
@@ -264,7 +275,7 @@ export function ChatWindow({
               <Send className="h-4 w-4" />
             </Button>
           </div>
-          <div className="text-xs text-muted-foreground mt-2">
+          <div className="text-xs text-muted-foreground">
             Presiona Enter para enviar, Shift+Enter para nueva línea
           </div>
         </CardContent>

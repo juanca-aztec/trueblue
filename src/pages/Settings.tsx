@@ -10,16 +10,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-
-interface AutoMessage {
-  id?: string;
-  title: string;
-  message: string;
-}
+import { useMessageTemplates } from "@/hooks/useMessageTemplates";
 
 export default function Settings() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { templates, addTemplate, updateTemplate, deleteTemplate } = useMessageTemplates();
   
   // Profile state
   const [profileData, setProfileData] = useState({
@@ -28,13 +24,7 @@ export default function Settings() {
   });
 
   // Auto messages state
-  const [autoMessages, setAutoMessages] = useState<AutoMessage[]>([
-    { id: "1", title: "Saludo inicial", message: "¡Hola! Gracias por contactarnos. ¿En qué podemos ayudarte hoy?" },
-    { id: "2", title: "Mensaje de espera", message: "Gracias por tu paciencia. Un agente se pondrá en contacto contigo pronto." },
-    { id: "3", title: "Despedida", message: "Gracias por contactarnos. ¡Que tengas un excelente día!" },
-  ]);
-  
-  const [newMessage, setNewMessage] = useState<AutoMessage>({ title: "", message: "" });
+  const [newMessage, setNewMessage] = useState({ title: "", message: "" });
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
 
   const handleUpdateProfile = async () => {
@@ -68,39 +58,23 @@ export default function Settings() {
   const handleAddAutoMessage = () => {
     if (!newMessage.title || !newMessage.message) return;
     
-    const id = (autoMessages.length + 1).toString();
-    setAutoMessages([...autoMessages, { ...newMessage, id }]);
-    setNewMessage({ title: "", message: "" });
-    
-    toast({
-      title: "Plantilla agregada",
-      description: "La nueva plantilla de mensaje se ha guardado.",
-    });
+    const success = addTemplate(newMessage.title, newMessage.message);
+    if (success) {
+      setNewMessage({ title: "", message: "" });
+    }
   };
 
-  const handleEditMessage = (message: AutoMessage) => {
-    setEditingMessage(message.id || "");
+  const handleEditMessage = (messageId: string) => {
+    setEditingMessage(messageId);
   };
 
-  const handleUpdateMessage = (id: string, updates: Partial<AutoMessage>) => {
-    setAutoMessages(autoMessages.map(msg => 
-      msg.id === id ? { ...msg, ...updates } : msg
-    ));
+  const handleUpdateMessage = (id: string, updates: { title?: string; message?: string }) => {
+    updateTemplate(id, updates);
     setEditingMessage(null);
-    
-    toast({
-      title: "Plantilla actualizada",
-      description: "Los cambios se han guardado correctamente.",
-    });
   };
 
   const handleDeleteMessage = (id: string) => {
-    setAutoMessages(autoMessages.filter(msg => msg.id !== id));
-    
-    toast({
-      title: "Plantilla eliminada",
-      description: "La plantilla se ha eliminado correctamente.",
-    });
+    deleteTemplate(id);
   };
 
   return (
@@ -211,18 +185,18 @@ export default function Settings() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {autoMessages.map((message) => (
+                  {templates.map((message) => (
                     <div key={message.id} className="border rounded-lg p-4 space-y-3">
                       {editingMessage === message.id ? (
                         <div className="space-y-3">
                           <Input
                             value={message.title}
-                            onChange={(e) => handleUpdateMessage(message.id!, { title: e.target.value })}
+                            onChange={(e) => handleUpdateMessage(message.id, { title: e.target.value })}
                             placeholder="Título de la plantilla"
                           />
                           <Textarea
                             value={message.message}
-                            onChange={(e) => handleUpdateMessage(message.id!, { message: e.target.value })}
+                            onChange={(e) => handleUpdateMessage(message.id, { message: e.target.value })}
                             placeholder="Mensaje de la plantilla"
                             rows={3}
                           />
@@ -243,14 +217,14 @@ export default function Settings() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleEditMessage(message)}
+                                onClick={() => handleEditMessage(message.id)}
                               >
                                 Editar
                               </Button>
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                onClick={() => handleDeleteMessage(message.id!)}
+                                onClick={() => handleDeleteMessage(message.id)}
                               >
                                 Eliminar
                               </Button>
