@@ -216,7 +216,10 @@ export function ChatWindow({
                         
                         {message.responded_by_agent_id && (
                           <div className="mt-2 text-xs text-muted-foreground">
-                            Respondido por agente
+                            {(() => {
+                              const agent = agents.find(a => a.id === message.responded_by_agent_id);
+                              return agent ? `Respondido por ${agent.name}` : 'Respondido por agente';
+                            })()}
                           </div>
                         )}
                       </CardContent>
