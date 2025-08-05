@@ -2,18 +2,29 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ConversationWithMessages, Message, ConversationStatus } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 export function useConversations() {
   const [conversations, setConversations] = useState<ConversationWithMessages[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   const fetchConversations = async () => {
     try {
-      // Fetch conversations first
-      const { data: conversationsData, error: conversationsError } = await supabase
+      if (!profile) return;
+
+      let conversationsQuery = supabase
         .from('tb_conversations')
-        .select('*')
+        .select('*');
+
+      // Si el usuario es agente (no admin), solo mostrar conversaciones asignadas a él
+      if (profile.role === 'agent') {
+        conversationsQuery = conversationsQuery.eq('assigned_agent_id', profile.id);
+      }
+
+      // Fetch conversations first
+      const { data: conversationsData, error: conversationsError } = await conversationsQuery
         .order('updated_at', { ascending: false });
 
       if (conversationsError) throw conversationsError;
@@ -307,6 +318,8 @@ export function useConversations() {
 
   // Set up real-time subscriptions
   useEffect(() => {
+    if (!profile) return;
+    
     fetchConversations();
 
     // Create unique channel names to avoid conflicts
@@ -363,7 +376,7 @@ export function useConversations() {
       supabase.removeChannel(conversationChannel);
       supabase.removeChannel(messageChannel);
     };
-  }, []);
+  }, [profile]);
 
   return {
     conversations,
