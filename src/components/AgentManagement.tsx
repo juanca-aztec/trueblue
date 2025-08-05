@@ -9,11 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useAgents } from "@/hooks/useAgents";
 import { useAuth } from "@/hooks/useAuth";
 import { Profile } from "@/types/database";
-import { Plus, Mail, User, Edit, UserCheck, UserX } from "lucide-react";
+import { Plus, Mail, User, Edit, UserCheck, UserX, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AgentManagement() {
-  const { agents, loading, createAgent, updateAgent, toggleAgentStatus } = useAgents();
+  const { agents, loading, createAgent, updateAgent, toggleAgentStatus, resendInvitation } = useAgents();
   const { profile } = useAuth();
   const { toast } = useToast();
   
@@ -86,6 +86,10 @@ export default function AgentManagement() {
 
   const handleToggleStatus = async (agent: Profile) => {
     await toggleAgentStatus(agent.id, agent.status);
+  };
+
+  const handleResendInvitation = async (agent: Profile) => {
+    await resendInvitation(agent.email);
   };
 
   return (
@@ -176,8 +180,12 @@ export default function AgentManagement() {
                     {agent.role === 'admin' ? 'Administrador' : 'Agente'}
                   </Badge>
                   
-                  <Badge variant={agent.status === 'active' ? 'default' : 'secondary'}>
-                    {agent.status === 'active' ? 'Activo' : 'Inactivo'}
+                  <Badge variant={
+                    agent.status === 'active' ? 'default' : 
+                    agent.status === 'pending' ? 'outline' : 'secondary'
+                  }>
+                    {agent.status === 'active' ? 'Activo' : 
+                     agent.status === 'pending' ? 'Pendiente' : 'Inactivo'}
                   </Badge>
                   
                   {agent.id === profile?.id && (
@@ -193,7 +201,18 @@ export default function AgentManagement() {
                       <Edit className="h-3 w-3" />
                     </Button>
                     
-                    {agent.id !== profile?.id && (
+                    {agent.status === 'pending' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleResendInvitation(agent)}
+                        title="Reenviar invitación"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                      </Button>
+                    )}
+                    
+                    {agent.id !== profile?.id && agent.status !== 'pending' && (
                       <Button
                         variant="outline"
                         size="sm"
