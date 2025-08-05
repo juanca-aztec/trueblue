@@ -17,9 +17,6 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
-          created_by: string | null
-          created_by_email: string | null
-          created_by_name: string | null
           email: string
           id: string
           name: string
@@ -30,9 +27,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
-          created_by_email?: string | null
-          created_by_name?: string | null
           email: string
           id?: string
           name: string
@@ -43,9 +37,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string | null
-          created_by_email?: string | null
-          created_by_name?: string | null
           email?: string
           id?: string
           name?: string
@@ -54,15 +45,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tb_agents: {
         Row: {
@@ -93,9 +76,7 @@ export type Database = {
       }
       tb_conversations: {
         Row: {
-          assigned_agent_email: string | null
           assigned_agent_id: string | null
-          assigned_agent_name: string | null
           created_at: string
           id: string
           status: Database["public"]["Enums"]["conversation_status"]
@@ -105,9 +86,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
-          assigned_agent_email?: string | null
           assigned_agent_id?: string | null
-          assigned_agent_name?: string | null
           created_at?: string
           id?: string
           status?: Database["public"]["Enums"]["conversation_status"]
@@ -117,9 +96,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
-          assigned_agent_email?: string | null
           assigned_agent_id?: string | null
-          assigned_agent_name?: string | null
           created_at?: string
           id?: string
           status?: Database["public"]["Enums"]["conversation_status"]
@@ -140,8 +117,6 @@ export type Database = {
       }
       tb_messages: {
         Row: {
-          agent_email: string | null
-          agent_name: string | null
           content: string
           conversation_id: string
           created_at: string
@@ -152,8 +127,6 @@ export type Database = {
           sender_role: Database["public"]["Enums"]["message_sender_role"]
         }
         Insert: {
-          agent_email?: string | null
-          agent_name?: string | null
           content: string
           conversation_id: string
           created_at?: string
@@ -164,8 +137,6 @@ export type Database = {
           sender_role: Database["public"]["Enums"]["message_sender_role"]
         }
         Update: {
-          agent_email?: string | null
-          agent_name?: string | null
           content?: string
           conversation_id?: string
           created_at?: string
@@ -269,10 +240,6 @@ export type Database = {
       get_current_user_status: {
         Args: Record<PropertyKey, never>
         Returns: string
-      }
-      is_current_user_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
       }
       is_user_active: {
         Args: Record<PropertyKey, never>

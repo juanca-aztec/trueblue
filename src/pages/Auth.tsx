@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,21 +16,7 @@ export default function Auth() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [invitationToken, setInvitationToken] = useState('');
-  const [isInvitationFlow, setIsInvitationFlow] = useState(false);
   const { signInWithMagicLink, signUp } = useAuth();
-
-  // Check for invitation parameters in URL
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const invitationEmail = urlParams.get('email');
-    
-    if (token && invitationEmail) {
-      setIsInvitationFlow(true);
-      setInvitationToken(token);
-      setEmail(invitationEmail);
-    }
-  }, []);
 
   const handleMagicLinkSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,12 +41,13 @@ export default function Auth() {
     setLoading(true);
     setError('');
 
-    const { error } = await signUp(email, password, name, invitationToken);
+    const { error } = await signUp(email, password, name);
     
     if (error) {
       setError(error.message || 'Error al registrarse');
     } else {
-      setSuccess('Cuenta creada exitosamente. Serás redirigido automáticamente.');
+      setError('');
+      // Show success message or redirect
     }
     
     setLoading(false);
@@ -81,84 +68,14 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isInvitationFlow ? (
-            <>
-              <Alert className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Invitación Recibida</AlertTitle>
-                <AlertDescription>
-                  Completa el formulario para crear tu cuenta y acceder al sistema.
-                </AlertDescription>
-              </Alert>
-              <Tabs defaultValue="signup" className="w-full">
-                <TabsList className="grid w-full grid-cols-1">
-                  <TabsTrigger value="signup">Crear Cuenta</TabsTrigger>
-                </TabsList>
-                <TabsContent value="signup">
-                  <form onSubmit={handleSignUp} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nombre Completo</Label>
-                      <Input
-                        id="name"
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Tu nombre completo"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="tu-email@ejemplo.com"
-                        disabled
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Contraseña</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Crea una contraseña segura"
-                        required
-                      />
-                    </div>
-                    {error && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
-                    {success && (
-                      <Alert>
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{success}</AlertDescription>
-                      </Alert>
-                    )}
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
-            </>
-          ) : (
-            <>
-              <Alert className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Acceso por Invitación</AlertTitle>
-                <AlertDescription>
-                  Solo los usuarios invitados por un administrador pueden acceder al sistema. Ingresa tu email para recibir un enlace de acceso seguro.
-                </AlertDescription>
-              </Alert>
-              <form onSubmit={handleMagicLinkSignIn} className="space-y-4">
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Acceso por Invitación</AlertTitle>
+            <AlertDescription>
+              Solo los usuarios invitados por un administrador pueden acceder al sistema. Ingresa tu email para recibir un enlace de acceso seguro.
+            </AlertDescription>
+          </Alert>
+          <form onSubmit={handleMagicLinkSignIn} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -182,12 +99,10 @@ export default function Auth() {
                 <AlertDescription>{success}</AlertDescription>
               </Alert>
             )}
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Enviando enlace...' : 'Enviar Enlace Mágico'}
-                </Button>
-              </form>
-            </>
-          )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Enviando enlace...' : 'Enviar Enlace Mágico'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
