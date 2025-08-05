@@ -197,20 +197,46 @@ export function useConversations() {
 
   const updateConversationStatus = async (conversationId: string, status: ConversationStatus) => {
     try {
+      let updateData: any = { status, updated_at: new Date().toISOString() };
+      
+      // Si el status es active_ai, asignar automáticamente el agente "Asistente Virtual TB"
+      if (status === 'active_ai') {
+        const { data: aiAgent } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('name', 'Asistente Virtual TB')
+          .single();
+        
+        if (aiAgent) {
+          updateData.assigned_agent_id = aiAgent.id;
+        }
+      }
+
       const { error } = await supabase
         .from('tb_conversations')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', conversationId);
 
       if (error) throw error;
 
       // Immediately update local state for better UX
       setConversations(prevConversations => 
-        prevConversations.map(conv => 
-          conv.id === conversationId 
-            ? { ...conv, status, updated_at: new Date().toISOString() }
-            : conv
-        )
+        prevConversations.map(conv => {
+          if (conv.id === conversationId) {
+            const updatedConv = { ...conv, status, updated_at: new Date().toISOString() };
+            
+            // Si asignamos el agente AI, también actualizar el assigned_agent
+            if (status === 'active_ai' && updateData.assigned_agent_id) {
+              updatedConv.assigned_agent_id = updateData.assigned_agent_id;
+              // Buscar el agente en las conversaciones existentes para obtener su información
+              const aiAgentFromConversations = prevConversations.find(c => c.assigned_agent?.id === updateData.assigned_agent_id)?.assigned_agent;
+              updatedConv.assigned_agent = aiAgentFromConversations || null;
+            }
+            
+            return updatedConv;
+          }
+          return conv;
+        })
       );
 
       toast({
@@ -229,23 +255,26 @@ export function useConversations() {
 
   const assignConversation = async (conversationId: string, agentId: string) => {
     try {
-      const { error } = await supabase
-        .from('tb_conversations')
-        .update({ 
-          assigned_agent_id: agentId,
-          status: 'active_human' as ConversationStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', conversationId);
-
-      if (error) throw error;
-
-      // Get the agent profile for immediate local update
+      // Get the agent profile to check if it's the AI agent
       const { data: agentProfile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', agentId)
         .single();
+
+      // Determinar el status basado en si es el agente AI o no
+      const newStatus: ConversationStatus = agentProfile?.name === 'Asistente Virtual TB' ? 'active_ai' : 'active_human';
+
+      const { error } = await supabase
+        .from('tb_conversations')
+        .update({ 
+          assigned_agent_id: agentId,
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', conversationId);
+
+      if (error) throw error;
 
       // Immediately update local state for better UX
       setConversations(prevConversations => 
@@ -255,7 +284,7 @@ export function useConversations() {
                 ...conv, 
                 assigned_agent_id: agentId,
                 assigned_agent: agentProfile,
-                status: 'active_human' as ConversationStatus,
+                status: newStatus,
                 updated_at: new Date().toISOString()
               }
             : conv
