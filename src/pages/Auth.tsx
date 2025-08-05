@@ -19,7 +19,14 @@ export default function Auth() {
   const [invitationToken, setInvitationToken] = useState('');
   const [invitationData, setInvitationData] = useState<any>(null);
   const [isInvitationFlow, setIsInvitationFlow] = useState(false);
-  const { signInWithMagicLink, signUp } = useAuth();
+  const { signInWithMagicLink, signUp, user } = useAuth();
+
+  // Redirect authenticated users
+  useEffect(() => {
+    if (user) {
+      window.location.href = '/';
+    }
+  }, [user]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
