@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types/database';
@@ -90,12 +88,6 @@ export function useAgents() {
       // Intentar enviar email de invitación
       let emailSent = false;
       try {
-        console.log(`📧 Verificando función send-user-invitation...`);
-        
-        // Verificar si la función existe listando las funciones disponibles
-        const { data: functions } = await supabase.functions.list();
-        console.log('📋 Funciones disponibles:', functions);
-        
         console.log(`📧 Enviando email de invitación a: ${email}`);
         const { data: emailData, error: emailError } = await supabase.functions.invoke('send-user-invitation', {
           body: {
@@ -274,4 +266,3 @@ export function useAgents() {
     refetch: fetchAgents
   };
 }
-
