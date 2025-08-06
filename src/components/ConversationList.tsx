@@ -1,9 +1,11 @@
+
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ConversationWithMessages } from '@/types/database';
 import { MessageSquare, User, Clock } from 'lucide-react';
+import { hasUnreadUserMessages } from '@/utils/conversationUtils';
 
 interface ConversationListProps {
   conversations: ConversationWithMessages[];
@@ -56,69 +58,84 @@ export function ConversationList({
 
   return (
     <div className="space-y-3">
-      {conversations.map((conversation) => (
-        <Card
-          key={conversation.id}
-          className={`cursor-pointer transition-colors hover:bg-accent ${
-            selectedConversationId === conversation.id ? 'bg-accent border-primary' : ''
-          }`}
-          onClick={() => onSelectConversation(conversation)}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">
-                  {conversation.username || conversation.user_id}
-                </span>
+      {conversations.map((conversation) => {
+        const hasUnread = hasUnreadUserMessages(conversation);
+        
+        return (
+          <Card
+            key={conversation.id}
+            className={`cursor-pointer transition-colors hover:bg-accent ${
+              selectedConversationId === conversation.id ? 'bg-accent border-primary' : ''
+            } ${hasUnread ? 'ring-2 ring-red-200' : ''}`}
+            onClick={() => onSelectConversation(conversation)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">
+                    {conversation.username || conversation.user_id}
+                  </span>
+                  {hasUnread && (
+                    <div className="relative">
+                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      <div className="absolute inset-0 w-2 h-2 bg-red-500 rounded-full animate-ping opacity-75"></div>
+                    </div>
+                  )}
+                </div>
+                <Badge 
+                  variant="secondary" 
+                  className={`${getStatusColor(conversation.status)} text-white`}
+                >
+                  {getStatusText(conversation.status)}
+                </Badge>
               </div>
-              <Badge 
-                variant="secondary" 
-                className={`${getStatusColor(conversation.status)} text-white`}
-              >
-                {getStatusText(conversation.status)}
-              </Badge>
-            </div>
-            
-            <div className="text-sm text-muted-foreground mb-2">
-              {getLastMessage(conversation.messages)}
-            </div>
-            
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <MessageSquare className="h-3 w-3" />
-                <span>{conversation.messages.length} mensajes</span>
+              
+              <div className={`text-sm mb-2 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                {getLastMessage(conversation.messages)}
               </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>
-                  {(() => {
-                    if (!conversation.updated_at) return 'Fecha desconocida';
-                    
-                    const date = new Date(conversation.updated_at);
-                    if (isNaN(date.getTime())) return 'Fecha inválida';
-                    
-                    try {
-                      return formatDistanceToNow(date, {
-                        addSuffix: true,
-                        locale: es,
-                      });
-                    } catch (error) {
-                      return 'Fecha inválida';
-                    }
-                  })()}
-                </span>
+              
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="h-3 w-3" />
+                  <span>{conversation.messages.length} mensajes</span>
+                  {hasUnread && (
+                    <span className="text-red-500 font-medium ml-1">
+                      • Sin responder
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>
+                    {(() => {
+                      if (!conversation.updated_at) return 'Fecha desconocida';
+                      
+                      const date = new Date(conversation.updated_at);
+                      if (isNaN(date.getTime())) return 'Fecha inválida';
+                      
+                      try {
+                        return formatDistanceToNow(date, {
+                          addSuffix: true,
+                          locale: es,
+                        });
+                      } catch (error) {
+                        return 'Fecha inválida';
+                      }
+                    })()}
+                  </span>
+                </div>
               </div>
-            </div>
-            
-            {conversation.assigned_agent && (
-              <div className="mt-2 text-xs text-muted-foreground">
-                Asignado a: {conversation.assigned_agent.name}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+              
+              {conversation.assigned_agent && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Asignado a: {conversation.assigned_agent.name}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
