@@ -1,10 +1,13 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConversationWithMessages, Profile } from "@/types/database";
 import { ConversationList } from "./ConversationList";
+import { ConversationSearch } from "./ConversationSearch";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { filterConversationsBySearch } from "@/utils/searchUtils";
 
 interface ConversationTabsProps {
   conversations: ConversationWithMessages[];
@@ -22,6 +25,7 @@ export function ConversationTabs({
   const { profile } = useAuth();
   const [activeFilter, setActiveFilter] = useState<string>("todas");
   const [agentFilter, setAgentFilter] = useState<string>("todos");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   
   const isAdmin = profile?.role === 'admin';
   
@@ -50,10 +54,16 @@ export function ConversationTabs({
     
     return true;
   });
+
+  // Aplicar filtro de búsqueda a las conversaciones ya filtradas
+  const searchFilteredActiveConversations = filterConversationsBySearch(filteredActiveConversations, searchTerm);
   
   const closedConversations = conversations.filter(
     conv => conv.status === 'closed'
   );
+
+  // Aplicar filtro de búsqueda a las conversaciones cerradas también
+  const searchFilteredClosedConversations = filterConversationsBySearch(closedConversations, searchTerm);
 
   return (
     <Card className="h-full">
@@ -61,14 +71,22 @@ export function ConversationTabs({
         <Tabs defaultValue="activas" className="h-full flex flex-col">
           <div className="p-4 border-b">
             <h2 className="text-lg font-semibold mb-3">Conversaciones</h2>
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-2 mb-3">
               <TabsTrigger value="activas">
-                Activas ({activeConversations.length})
+                Activas ({searchFilteredActiveConversations.length})
               </TabsTrigger>
               <TabsTrigger value="cerradas">
-                Cerradas ({closedConversations.length})
+                Cerradas ({searchFilteredClosedConversations.length})
               </TabsTrigger>
             </TabsList>
+            
+            {/* Search component */}
+            <div className="mb-3">
+              <ConversationSearch 
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+              />
+            </div>
           </div>
           
           <TabsContent value="activas" className="flex-1 m-0 p-0 flex flex-col">
@@ -104,21 +122,33 @@ export function ConversationTabs({
                 </Select>
               )}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 p-4">
+              {searchTerm && (
+                <div className="mb-3 text-sm text-muted-foreground">
+                  {searchFilteredActiveConversations.length} resultado(s) para "{searchTerm}"
+                </div>
+              )}
               <ConversationList
-                conversations={filteredActiveConversations}
+                conversations={searchFilteredActiveConversations}
                 selectedConversationId={selectedConversationId}
                 onSelectConversation={onSelectConversation}
               />
             </div>
           </TabsContent>
           
-          <TabsContent value="cerradas" className="flex-1 m-0 p-0">
-            <ConversationList
-              conversations={closedConversations}
-              selectedConversationId={selectedConversationId}
-              onSelectConversation={onSelectConversation}
-            />
+          <TabsContent value="cerradas" className="flex-1 m-0 p-0 flex flex-col">
+            <div className="flex-1 p-4">
+              {searchTerm && (
+                <div className="mb-3 text-sm text-muted-foreground">
+                  {searchFilteredClosedConversations.length} resultado(s) para "{searchTerm}"
+                </div>
+              )}
+              <ConversationList
+                conversations={searchFilteredClosedConversations}
+                selectedConversationId={selectedConversationId}
+                onSelectConversation={onSelectConversation}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>

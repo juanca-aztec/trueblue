@@ -90,6 +90,7 @@ export type Database = {
           assigned_agent_name: string | null
           created_at: string
           id: string
+          phone_number: string | null
           status: Database["public"]["Enums"]["conversation_status"]
           summary: string | null
           updated_at: string
@@ -102,6 +103,7 @@ export type Database = {
           assigned_agent_name?: string | null
           created_at?: string
           id?: string
+          phone_number?: string | null
           status?: Database["public"]["Enums"]["conversation_status"]
           summary?: string | null
           updated_at?: string
@@ -114,6 +116,7 @@ export type Database = {
           assigned_agent_name?: string | null
           created_at?: string
           id?: string
+          phone_number?: string | null
           status?: Database["public"]["Enums"]["conversation_status"]
           summary?: string | null
           updated_at?: string
