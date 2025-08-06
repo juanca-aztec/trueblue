@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -92,6 +93,11 @@ export function ChatWindow({
         return 'text-gray-600';
     }
   };
+
+  // Ordenar mensajes cronológicamente (más antiguos primero, más recientes al final)
+  const sortedMessages = [...conversation.messages].sort((a, b) => 
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -199,12 +205,12 @@ export function ChatWindow({
       <div className="flex-1 min-h-0 border rounded-lg bg-muted/20">
         <ScrollArea className="h-[400px]">
           <div className="space-y-3 p-2">
-            {conversation.messages.length === 0 ? (
+            {sortedMessages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 No hay mensajes en esta conversación
               </div>
             ) : (
-              conversation.messages.map((message) => {
+              sortedMessages.map((message) => {
                 const isUser = message.sender_role === 'user';
                 return (
                   <div key={message.id} className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}>
