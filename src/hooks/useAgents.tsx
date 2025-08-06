@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types/database';
@@ -86,38 +87,56 @@ export function useAgents() {
       
       console.log(`✅ Perfil pendiente creado para: ${email}`, profileData);
 
-      // Enviar email de invitación
+      // Intentar enviar email de invitación
+      let emailSent = false;
       try {
+        console.log(`📧 Verificando función send-user-invitation...`);
+        
+        // Verificar si la función existe listando las funciones disponibles
+        const { data: functions } = await supabase.functions.list();
+        console.log('📋 Funciones disponibles:', functions);
+        
         console.log(`📧 Enviando email de invitación a: ${email}`);
         const { data: emailData, error: emailError } = await supabase.functions.invoke('send-user-invitation', {
           body: {
             email: email,
             name: name,
             role: role,
-            invitedBy: user.user_metadata?.name || user.email
+            invitedBy: user.user_metadata?.name || user.email || 'Admin'
           }
         });
 
         if (emailError) {
-          console.error('❌ Error enviando email:', emailError);
-          // No fallar la creación del agente si el email falla
-          toast({
-            title: "Agente creado con advertencia",
-            description: `El agente ${name} fue creado pero no se pudo enviar el email de invitación. Contacta al agente directamente.`,
-            variant: "destructive",
-          });
-        } else {
-          console.log(`✅ Email enviado exitosamente a: ${email}`, emailData);
-          toast({
-            title: "Agente creado exitosamente",
-            description: `El agente ${name} ha sido creado y se ha enviado la invitación a ${email}`,
-          });
+          console.error('❌ Error en función de email:', emailError);
+          throw emailError;
         }
-      } catch (emailError) {
-        console.error('💥 Error enviando email:', emailError);
+
+        console.log(`✅ Email enviado exitosamente a: ${email}`, emailData);
+        emailSent = true;
+
+      } catch (emailError: any) {
+        console.error('💥 Error completo enviando email:', {
+          error: emailError,
+          message: emailError?.message,
+          details: emailError?.details,
+          hint: emailError?.hint,
+          code: emailError?.code
+        });
+        
+        // No fallar la creación del agente, solo mostrar advertencia
+        emailSent = false;
+      }
+
+      // Mostrar mensaje apropiado según si el email se envió o no
+      if (emailSent) {
+        toast({
+          title: "Agente creado exitosamente",
+          description: `El agente ${name} ha sido creado y se ha enviado la invitación a ${email}`,
+        });
+      } else {
         toast({
           title: "Agente creado con advertencia",
-          description: `El agente ${name} fue creado pero no se pudo enviar el email de invitación. Contacta al agente directamente.`,
+          description: `El agente ${name} fue creado pero no se pudo enviar el email de invitación. El agente puede iniciar sesión directamente con ${email}.`,
           variant: "destructive",
         });
       }
@@ -125,10 +144,10 @@ export function useAgents() {
       await fetchAgents();
       return { success: true, data: profileData };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('💥 Error completo en createAgent:', {
         error,
-        message: error.message,
+        message: error?.message,
         timestamp: new Date().toISOString()
       });
       
@@ -145,7 +164,7 @@ export function useAgents() {
       
       toast({
         title: "Error",
-        description: `No se pudo crear el agente: ${error.message}`,
+        description: `No se pudo crear el agente: ${error?.message || 'Error desconocido'}`,
         variant: "destructive",
       });
       
@@ -194,11 +213,11 @@ export function useAgents() {
       });
 
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('💥 Error:', error);
       toast({
         title: "Error",
-        description: `Error inesperado: ${error.message}`,
+        description: `Error inesperado: ${error?.message || 'Error desconocido'}`,
         variant: "destructive",
       });
       return { success: false, error };
@@ -255,3 +274,4 @@ export function useAgents() {
     refetch: fetchAgents
   };
 }
+
