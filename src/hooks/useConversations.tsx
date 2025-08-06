@@ -29,10 +29,10 @@ export function useConversations() {
         .from('tb_conversations')
         .select('*');
 
-      // Si el usuario es agente (no admin), mostrar conversaciones asignadas a él + conversaciones sin asignar
+      // Si el usuario es agente (no admin), mostrar conversaciones asignadas a él + las que están pending_human
       if (profile.role === 'agent') {
         console.log('🕵️ Filtering conversations for agent:', profile.id);
-        conversationsQuery = conversationsQuery.or(`assigned_agent_id.eq.${profile.id},assigned_agent_id.is.null`);
+        conversationsQuery = conversationsQuery.or(`assigned_agent_id.eq.${profile.id},status.eq.pending_human`);
       } else {
         console.log('👑 Usuario admin - mostrar todas las conversaciones');
         // Los admins ven todas las conversaciones, no aplicamos filtro

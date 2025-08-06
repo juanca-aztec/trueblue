@@ -43,9 +43,9 @@ export function ConversationTabs({
       return conv.assigned_agent_id === agentFilter;
     }
     
-    // Para agentes no-admin, mostrar conversaciones asignadas a ellos + sin asignar
+    // Para agentes no-admin, mostrar conversaciones asignadas a ellos + las que están pending_human
     if (!isAdmin && profile) {
-      return conv.assigned_agent_id === profile.id || !conv.assigned_agent_id;
+      return conv.assigned_agent_id === profile.id || conv.status === 'pending_human';
     }
     
     return true;
