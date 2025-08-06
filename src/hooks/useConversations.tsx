@@ -29,10 +29,10 @@ export function useConversations() {
         .from('tb_conversations')
         .select('*');
 
-      // Si el usuario es agente (no admin), solo mostrar conversaciones asignadas a él
+      // Si el usuario es agente (no admin), mostrar conversaciones asignadas a él + conversaciones sin asignar
       if (profile.role === 'agent') {
         console.log('🕵️ Filtering conversations for agent:', profile.id);
-        conversationsQuery = conversationsQuery.eq('assigned_agent_id', profile.id);
+        conversationsQuery = conversationsQuery.or(`assigned_agent_id.eq.${profile.id},assigned_agent_id.is.null`);
       } else {
         console.log('👑 Usuario admin - mostrar todas las conversaciones');
         // Los admins ven todas las conversaciones, no aplicamos filtro
@@ -163,13 +163,21 @@ export function useConversations() {
 
       if (error) throw error;
 
-      // Update conversation status to active_human and timestamp
+      // Auto-asignar la conversación al agente si no está asignada
+      let updateData: any = { 
+        status: 'active_human' as ConversationStatus,
+        updated_at: new Date().toISOString()
+      };
+
+      if (!conversation.assigned_agent_id) {
+        console.log('🔧 Auto-asignando conversación al agente:', agentId);
+        updateData.assigned_agent_id = agentId;
+      }
+
+      // Update conversation status to active_human and assign agent if needed
       await supabase
         .from('tb_conversations')
-        .update({ 
-          status: 'active_human' as ConversationStatus,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', conversationId);
 
       // Send message to Telegram

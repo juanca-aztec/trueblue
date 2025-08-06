@@ -43,6 +43,11 @@ export function ConversationTabs({
       return conv.assigned_agent_id === agentFilter;
     }
     
+    // Para agentes no-admin, mostrar conversaciones asignadas a ellos + sin asignar
+    if (!isAdmin && profile) {
+      return conv.assigned_agent_id === profile.id || !conv.assigned_agent_id;
+    }
+    
     return true;
   });
   
