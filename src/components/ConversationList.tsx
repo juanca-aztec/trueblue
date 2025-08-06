@@ -4,7 +4,7 @@ import { es } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ConversationWithMessages } from '@/types/database';
-import { MessageSquare, User, Clock } from 'lucide-react';
+import { MessageSquare, User, Clock, Phone } from 'lucide-react';
 import { hasUnreadUserMessages } from '@/utils/conversationUtils';
 
 interface ConversationListProps {
@@ -90,6 +90,14 @@ export function ConversationList({
                   {getStatusText(conversation.status)}
                 </Badge>
               </div>
+
+              {/* Mostrar número de teléfono si está disponible */}
+              {conversation.phone_number && (
+                <div className="flex items-center gap-1 mb-2 text-sm text-muted-foreground">
+                  <Phone className="h-3 w-3" />
+                  <span>{conversation.phone_number}</span>
+                </div>
+              )}
               
               <div className={`text-sm mb-2 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                 {getLastMessage(conversation.messages)}
