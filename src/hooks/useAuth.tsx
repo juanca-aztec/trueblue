@@ -36,18 +36,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('🔍 Buscando perfil para usuario:', session.user.email);
             
             // Find profile by email (new system without user_id dependency)
-            const { data: profile, error: profileError } = await supabase
+            let { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('*')
               .eq('email', session.user.email)
-              .eq('status', 'active')
               .single();
 
             if (profileError) {
               console.error('❌ Error buscando perfil por email:', profileError);
-              console.log('⚠️ No se encontró perfil activo para:', session.user.email);
-            } else {
+              console.log('⚠️ No se encontró perfil para:', session.user.email);
+            } else if (profile) {
               console.log('✅ Perfil encontrado por email:', profile);
+              
+              // Si el perfil está en estado "pending", activarlo automáticamente
+              if (profile.status === 'pending') {
+                console.log(`🔄 Activando agente pendiente: ${session.user.email}`);
+                
+                const { data: updatedProfile, error: updateError } = await supabase
+                  .from('profiles')
+                  .update({ status: 'active' })
+                  .eq('email', session.user.email)
+                  .select()
+                  .single();
+
+                if (updateError) {
+                  console.error('❌ Error activando perfil:', updateError);
+                } else {
+                  console.log(`✅ Agente activado exitosamente: ${session.user.email}`);
+                  profile = updatedProfile; // Usar el perfil actualizado
+                }
+              }
+              
+              // Solo usar perfiles activos
+              if (profile.status !== 'active') {
+                console.log('⚠️ Perfil no está activo:', profile.status);
+                profile = null;
+              }
             }
             
             console.log('🏁 Perfil final cargado en Auth:', profile);

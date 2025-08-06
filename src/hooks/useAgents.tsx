@@ -63,15 +63,15 @@ export function useAgents() {
         return { success: false, error: new Error('Usuario ya existe') };
       }
 
-      // Crear perfil directamente activo (sin depender de auth.users)
-      console.log(`📝 Creando perfil activo para: ${email}`);
+      // Crear perfil en estado pendiente (se activará cuando hagan login)
+      console.log(`📝 Creando perfil pendiente para: ${email}`);
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .insert({
           email: email,
           name: name,
           role: role,
-          status: 'active', // Directamente activo
+          status: 'pending', // Pendiente hasta que hagan login
           created_by_name: user.user_metadata?.name || user.email,
           created_by_email: user.email
         })
@@ -83,11 +83,11 @@ export function useAgents() {
         throw profileError;
       }
       
-      console.log(`✅ Perfil activo creado para: ${email}`, profileData);
+      console.log(`✅ Perfil pendiente creado para: ${email}`, profileData);
 
       toast({
         title: "Agente creado exitosamente",
-        description: `El agente ${name} ha sido creado y puede iniciar sesión con ${email}`,
+        description: `El agente ${name} ha sido creado. Se activará automáticamente cuando haga login con ${email}`,
       });
 
       await fetchAgents();
