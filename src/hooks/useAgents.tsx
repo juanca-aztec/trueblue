@@ -64,7 +64,7 @@ export function useAgents() {
         return { success: false, error: new Error('Usuario ya existe') };
       }
 
-      // Crear perfil en estado pendiente (se activará cuando hagan login)
+      // Crear perfil en estado pendiente
       console.log(`📝 Creando perfil pendiente para: ${email}`);
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -72,7 +72,7 @@ export function useAgents() {
           email: email,
           name: name,
           role: role,
-          status: 'pending', // Pendiente hasta que hagan login
+          status: 'pending',
           created_by_name: user.user_metadata?.name || user.email,
           created_by_email: user.email
         })
@@ -86,10 +86,41 @@ export function useAgents() {
       
       console.log(`✅ Perfil pendiente creado para: ${email}`, profileData);
 
-      toast({
-        title: "Agente creado exitosamente",
-        description: `El agente ${name} ha sido creado. Se activará automáticamente cuando haga login con ${email}`,
-      });
+      // Enviar email de invitación
+      try {
+        console.log(`📧 Enviando email de invitación a: ${email}`);
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-user-invitation', {
+          body: {
+            email: email,
+            name: name,
+            role: role,
+            invitedBy: user.user_metadata?.name || user.email
+          }
+        });
+
+        if (emailError) {
+          console.error('❌ Error enviando email:', emailError);
+          // No fallar la creación del agente si el email falla
+          toast({
+            title: "Agente creado con advertencia",
+            description: `El agente ${name} fue creado pero no se pudo enviar el email de invitación. Contacta al agente directamente.`,
+            variant: "destructive",
+          });
+        } else {
+          console.log(`✅ Email enviado exitosamente a: ${email}`, emailData);
+          toast({
+            title: "Agente creado exitosamente",
+            description: `El agente ${name} ha sido creado y se ha enviado la invitación a ${email}`,
+          });
+        }
+      } catch (emailError) {
+        console.error('💥 Error enviando email:', emailError);
+        toast({
+          title: "Agente creado con advertencia",
+          description: `El agente ${name} fue creado pero no se pudo enviar el email de invitación. Contacta al agente directamente.`,
+          variant: "destructive",
+        });
+      }
 
       await fetchAgents();
       return { success: true, data: profileData };
