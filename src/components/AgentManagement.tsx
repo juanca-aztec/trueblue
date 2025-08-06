@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,14 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAgents } from "@/hooks/useAgents";
 import { useAuth } from "@/hooks/useAuth";
 import { Profile } from "@/types/database";
-import { Plus, Mail, User, Edit, UserCheck, UserX, RefreshCw } from "lucide-react";
+import { Plus, Mail, User, Edit, UserCheck, UserX, RefreshCw, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AgentManagement() {
-  const { agents, loading, createAgent, updateAgent, toggleAgentStatus, resendInvitation } = useAgents();
+  const { agents, loading, createAgent, updateAgent, deleteAgent, toggleAgentStatus, resendInvitation } = useAgents();
   const { profile } = useAuth();
   const { toast } = useToast();
   
@@ -90,6 +92,10 @@ export default function AgentManagement() {
 
   const handleResendInvitation = async (agent: Profile) => {
     await resendInvitation(agent.email);
+  };
+
+  const handleDeleteAgent = async (agent: Profile) => {
+    await deleteAgent(agent.id, agent.name);
   };
 
   return (
@@ -224,6 +230,38 @@ export default function AgentManagement() {
                           <UserCheck className="h-3 w-3" />
                         )}
                       </Button>
+                    )}
+                    
+                    {agent.id !== profile?.id && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción eliminará permanentemente al agente "{agent.name}" de la plataforma. 
+                              Esta acción no se puede deshacer.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteAgent(agent)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                   </div>
                 </div>

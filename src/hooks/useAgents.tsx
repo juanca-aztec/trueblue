@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types/database';
@@ -123,6 +124,34 @@ export function useAgents() {
     }
   };
 
+  const deleteAgent = async (id: string, name: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchAgents();
+      
+      toast({
+        title: "Agente eliminado",
+        description: `El agente ${name} ha sido eliminado correctamente`,
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting agent:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el agente",
+        variant: "destructive",
+      });
+      return { success: false, error };
+    }
+  };
+
   const resendInvitation = async (email: string) => {
     try {
       setLoading(true);
@@ -189,6 +218,7 @@ export function useAgents() {
     loading,
     createAgent,
     updateAgent,
+    deleteAgent,
     toggleAgentStatus,
     resendInvitation,
     refetch: fetchAgents
