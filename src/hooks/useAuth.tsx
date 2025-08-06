@@ -33,67 +33,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           // Defer profile fetch to avoid blocking
           setTimeout(async () => {
-            console.log('🔍 Buscando perfil para usuario:', session.user.id, session.user.email);
+            console.log('🔍 Buscando perfil para usuario:', session.user.email);
             
-            // First try to find profile by user_id
-            let { data: profile, error: profileError } = await supabase
+            // Find profile by email (new system without user_id dependency)
+            const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('*')
-              .eq('user_id', session.user.id)
+              .eq('email', session.user.email)
+              .eq('status', 'active')
               .single();
 
-            console.log('🎯 Perfil encontrado por user_id:', profile);
-            if (profileError && profileError.code !== 'PGRST116') {
-              console.error('❌ Error buscando perfil por user_id:', profileError);
-            }
-
-            // If no profile found by user_id, try to find pending profile by email
-            if (!profile) {
-              console.log('❌ No se encontró perfil por user_id, buscando perfil pendiente por email...');
-              
-              const { data: pendingProfiles, error: pendingError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('email', session.user.email)
-                .is('user_id', null)
-                .eq('status', 'pending');
-
-              console.log('📧 Perfiles pendientes encontrados por email:', pendingProfiles);
-              
-              if (pendingError) {
-                console.error('❌ Error buscando perfiles pendientes:', pendingError);
-              }
-
-              const pendingProfile = pendingProfiles?.[0];
-              if (pendingProfile) {
-                console.log('🔄 Activando perfil pendiente...', pendingProfile.id);
-                
-                // Link the pending profile to this user and activate it
-                const { data: updatedProfile, error: updateError } = await supabase
-                  .from('profiles')
-                  .update({ 
-                    user_id: session.user.id,
-                    status: 'active'
-                  })
-                  .eq('id', pendingProfile.id)
-                  .select()
-                  .single();
-                
-                if (updateError) {
-                  console.error('❌ Error activando perfil pendiente:', updateError);
-                  console.error('❌ Detalles del error:', JSON.stringify(updateError, null, 2));
-                } else {
-                  console.log('✅ Perfil pendiente activado exitosamente:', updatedProfile);
-                  profile = updatedProfile;
-                }
-              } else {
-                console.log('⚠️ No se encontró perfil pendiente para:', session.user.email);
-              }
+            if (profileError) {
+              console.error('❌ Error buscando perfil por email:', profileError);
+              console.log('⚠️ No se encontró perfil activo para:', session.user.email);
+            } else {
+              console.log('✅ Perfil encontrado por email:', profile);
             }
             
             console.log('🏁 Perfil final cargado en Auth:', profile);
             setProfile(profile);
-          }, 100); // Increased timeout slightly for better reliability
+          }, 100);
         } else {
           console.log('👤 Usuario no autenticado o evento no relevante');
           setProfile(null);
