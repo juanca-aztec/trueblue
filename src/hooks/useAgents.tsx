@@ -39,7 +39,7 @@ export function useAgents() {
 
       setLoading(true);
 
-      console.log(`🚀 [${new Date().toISOString()}] Creando agente directamente:`, {
+      console.log(`🚀 [${new Date().toISOString()}] Creando agente:`, {
         email,
         name,
         role
@@ -107,15 +107,7 @@ export function useAgents() {
         emailSent = true;
 
       } catch (emailError: any) {
-        console.error('💥 Error completo enviando email:', {
-          error: emailError,
-          message: emailError?.message,
-          details: emailError?.details,
-          hint: emailError?.hint,
-          code: emailError?.code
-        });
-        
-        // No fallar la creación del agente, solo mostrar advertencia
+        console.error('💥 Error enviando email:', emailError);
         emailSent = false;
       }
 
@@ -137,22 +129,7 @@ export function useAgents() {
       return { success: true, data: profileData };
 
     } catch (error: any) {
-      console.error('💥 Error completo en createAgent:', {
-        error,
-        message: error?.message,
-        timestamp: new Date().toISOString()
-      });
-      
-      // Limpiar el perfil creado si hay un error crítico
-      try {
-        await supabase
-          .from('profiles')
-          .delete()
-          .eq('email', email);
-        console.log(`🧹 Perfil limpiado para: ${email}`);
-      } catch (cleanupError) {
-        console.error('❌ Error limpiando perfil:', cleanupError);
-      }
+      console.error('💥 Error en createAgent:', error);
       
       toast({
         title: "Error",
