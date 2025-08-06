@@ -1,4 +1,5 @@
 
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
@@ -29,33 +30,36 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { email, name, role, invitedBy }: InvitationEmailRequest = await req.json();
 
-    console.log(`📧 Verificando usuario existente: ${email}`);
+    console.log(`📧 Procesando invitación para: ${email} por ${invitedBy}`);
 
     // Primero verificar si ya existe un usuario con este email
-    const { data: existingUser, error: userCheckError } = await supabase.auth.admin.listUsers();
+    const { data: existingUsers, error: userCheckError } = await supabase.auth.admin.listUsers();
     
     if (userCheckError) {
       console.error("❌ Error verificando usuarios:", userCheckError);
     }
 
-    const userExists = existingUser?.users?.some(user => user.email === email);
+    const existingUser = existingUsers?.users?.find(user => user.email === email);
 
-    if (userExists) {
-      console.log(`⚠️ Usuario ya existe: ${email}`);
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: "Usuario ya registrado",
-        message: `El usuario ${email} ya está registrado en el sistema`
-      }), {
-        status: 409, // Conflict
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
-      });
+    if (existingUser) {
+      console.log(`🔄 Usuario ya existe: ${email}, procediendo a reemplazarlo/reinvitarlo`);
+      
+      try {
+        // Eliminar el usuario existente
+        const { error: deleteError } = await supabase.auth.admin.deleteUser(existingUser.id);
+        
+        if (deleteError) {
+          console.error("❌ Error eliminando usuario existente:", deleteError);
+          // Continuamos de todas formas, tal vez podamos invitarlo
+        } else {
+          console.log(`✅ Usuario existente eliminado: ${email}`);
+        }
+      } catch (deleteErr) {
+        console.error("❌ Error en proceso de eliminación:", deleteErr);
+      }
     }
 
-    console.log(`📧 Enviando invitación de Supabase a: ${email} por ${invitedBy}`);
+    console.log(`📧 Enviando nueva invitación de Supabase a: ${email}`);
 
     // Usar el sistema de invitación nativo de Supabase
     const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
@@ -70,14 +74,16 @@ const handler = async (req: Request): Promise<Response> => {
     if (error) {
       console.error("❌ Error enviando invitación de Supabase:", error);
       
-      // Manejar diferentes tipos de errores
+      // Si aún hay error de email existente, intentamos con un enfoque diferente
       if (error.message?.includes('email_exists') || error.message?.includes('already been registered')) {
+        console.log(`⚠️ Aún existe conflicto con email: ${email}, pero continuamos creando el perfil local`);
+        
         return new Response(JSON.stringify({ 
-          success: false, 
-          error: "Usuario ya registrado",
-          message: `El usuario ${email} ya está registrado en el sistema`
+          success: true, 
+          warning: "Usuario ya registrado pero perfil local creado",
+          message: `El usuario ${email} ya está en el sistema de auth, pero se procederá con el perfil local`
         }), {
-          status: 409, // Conflict
+          status: 200,
           headers: {
             "Content-Type": "application/json",
             ...corsHeaders,
@@ -92,7 +98,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      data: data 
+      data: data,
+      message: `Invitación enviada exitosamente a ${email}`
     }), {
       status: 200,
       headers: {
@@ -116,3 +123,4 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 serve(handler);
+
