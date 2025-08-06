@@ -85,11 +85,11 @@ export function useAgents() {
       
       console.log(`✅ Perfil pendiente creado para: ${email}`, profileData);
 
-      // Intentar enviar email de invitación
-      let emailSent = false;
+      // Intentar enviar invitación usando Supabase nativo
+      let invitationSent = false;
       try {
-        console.log(`📧 Enviando email de invitación a: ${email}`);
-        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-user-invitation', {
+        console.log(`📧 Enviando invitación nativa de Supabase a: ${email}`);
+        const { data: inviteData, error: inviteError } = await supabase.functions.invoke('send-user-invitation', {
           body: {
             email: email,
             name: name,
@@ -98,21 +98,21 @@ export function useAgents() {
           }
         });
 
-        if (emailError) {
-          console.error('❌ Error en función de email:', emailError);
-          throw emailError;
+        if (inviteError) {
+          console.error('❌ Error en función de invitación:', inviteError);
+          throw inviteError;
         }
 
-        console.log(`✅ Email enviado exitosamente a: ${email}`, emailData);
-        emailSent = true;
+        console.log(`✅ Invitación enviada exitosamente a: ${email}`, inviteData);
+        invitationSent = true;
 
-      } catch (emailError: any) {
-        console.error('💥 Error enviando email:', emailError);
-        emailSent = false;
+      } catch (inviteError: any) {
+        console.error('💥 Error enviando invitación:', inviteError);
+        invitationSent = false;
       }
 
-      // Mostrar mensaje apropiado según si el email se envió o no
-      if (emailSent) {
+      // Mostrar mensaje apropiado según si la invitación se envió o no
+      if (invitationSent) {
         toast({
           title: "Agente creado exitosamente",
           description: `El agente ${name} ha sido creado y se ha enviado la invitación a ${email}`,
@@ -120,7 +120,7 @@ export function useAgents() {
       } else {
         toast({
           title: "Agente creado con advertencia",
-          description: `El agente ${name} fue creado pero no se pudo enviar el email de invitación. El agente puede iniciar sesión directamente con ${email}.`,
+          description: `El agente ${name} fue creado pero no se pudo enviar la invitación. El agente puede iniciar sesión directamente con ${email}.`,
           variant: "destructive",
         });
       }
@@ -174,11 +174,41 @@ export function useAgents() {
   const resendInvitation = async (email: string) => {
     try {
       setLoading(true);
-      console.log(`🔄 [${new Date().toISOString()}] Agente ya activo: ${email}`);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      // Buscar el perfil del agente
+      const { data: agent } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (!agent) {
+        throw new Error('Agente no encontrado');
+      }
+
+      console.log(`🔄 [${new Date().toISOString()}] Reenviando invitación a: ${email}`);
+
+      const { data: inviteData, error: inviteError } = await supabase.functions.invoke('send-user-invitation', {
+        body: {
+          email: agent.email,
+          name: agent.name,
+          role: agent.role,
+          invitedBy: user.user_metadata?.name || user.email || 'Admin'
+        }
+      });
+
+      if (inviteError) {
+        throw inviteError;
+      }
 
       toast({
-        title: "Agente ya está activo",
-        description: `El agente ${email} ya puede iniciar sesión normalmente.`,
+        title: "Invitación reenviada",
+        description: `Se ha reenviado la invitación a ${email}`,
       });
 
       return { success: true };
@@ -186,7 +216,7 @@ export function useAgents() {
       console.error('💥 Error:', error);
       toast({
         title: "Error",
-        description: `Error inesperado: ${error?.message || 'Error desconocido'}`,
+        description: `Error reenviando invitación: ${error?.message || 'Error desconocido'}`,
         variant: "destructive",
       });
       return { success: false, error };

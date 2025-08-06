@@ -1,8 +1,11 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,33 +29,28 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { email, name, role, invitedBy }: InvitationEmailRequest = await req.json();
 
-    console.log(`📧 Enviando email de invitación a: ${email} por ${invitedBy}`);
+    console.log(`📧 Enviando invitación de Supabase a: ${email} por ${invitedBy}`);
 
-    const emailResponse = await resend.emails.send({
-      from: "TrueBlue <onboarding@resend.dev>",
-      to: [email],
-      subject: `Invitación para unirse a TrueBlue como ${role === 'admin' ? 'Administrador' : 'Agente'}`,
-      html: `
-        <h1>¡Hola ${name}!</h1>
-        <p>Has sido invitado por <strong>${invitedBy}</strong> para unirte a la plataforma TrueBlue como <strong>${role === 'admin' ? 'Administrador' : 'Agente'}</strong>.</p>
-        
-        <p>Para acceder a la plataforma, simplemente inicia sesión con tu email:</p>
-        <p><strong>${email}</strong></p>
-        
-        <p>Puedes acceder en: <a href="https://trueblue.azteclab.co/auth">https://trueblue.azteclab.co/auth</a></p>
-        
-        <p>Una vez que inicies sesión, tu cuenta será activada automáticamente y podrás comenzar a usar la plataforma.</p>
-        
-        <p>¡Bienvenido al equipo!</p>
-        <p>Saludos,<br>El equipo de TrueBlue</p>
-      `,
+    // Usar el sistema de invitación nativo de Supabase
+    const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
+      data: {
+        name: name,
+        role: role,
+        invited_by: invitedBy
+      },
+      redirectTo: 'https://trueblue.azteclab.co/auth'
     });
 
-    console.log("✅ Email enviado exitosamente:", emailResponse);
+    if (error) {
+      console.error("❌ Error enviando invitación de Supabase:", error);
+      throw error;
+    }
+
+    console.log("✅ Invitación enviada exitosamente:", data);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      data: emailResponse 
+      data: data 
     }), {
       status: 200,
       headers: {
@@ -61,7 +59,7 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("❌ Error enviando email de invitación:", error);
+    console.error("❌ Error enviando invitación:", error);
     return new Response(
       JSON.stringify({ 
         success: false, 
