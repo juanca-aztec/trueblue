@@ -29,6 +29,32 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { email, name, role, invitedBy }: InvitationEmailRequest = await req.json();
 
+    console.log(`📧 Verificando usuario existente: ${email}`);
+
+    // Primero verificar si ya existe un usuario con este email
+    const { data: existingUser, error: userCheckError } = await supabase.auth.admin.listUsers();
+    
+    if (userCheckError) {
+      console.error("❌ Error verificando usuarios:", userCheckError);
+    }
+
+    const userExists = existingUser?.users?.some(user => user.email === email);
+
+    if (userExists) {
+      console.log(`⚠️ Usuario ya existe: ${email}`);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: "Usuario ya registrado",
+        message: `El usuario ${email} ya está registrado en el sistema`
+      }), {
+        status: 409, // Conflict
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    }
+
     console.log(`📧 Enviando invitación de Supabase a: ${email} por ${invitedBy}`);
 
     // Usar el sistema de invitación nativo de Supabase
@@ -43,6 +69,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (error) {
       console.error("❌ Error enviando invitación de Supabase:", error);
+      
+      // Manejar diferentes tipos de errores
+      if (error.message?.includes('email_exists') || error.message?.includes('already been registered')) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "Usuario ya registrado",
+          message: `El usuario ${email} ya está registrado en el sistema`
+        }), {
+          status: 409, // Conflict
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        });
+      }
+      
       throw error;
     }
 
@@ -63,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error.message || 'Error desconocido'
       }),
       {
         status: 500,

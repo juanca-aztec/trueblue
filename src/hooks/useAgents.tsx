@@ -45,13 +45,18 @@ export function useAgents() {
         role
       });
 
-      // Verificar si ya existe un usuario con este email
-      console.log(`🔍 Verificando si existe usuario con email: ${email}`);
-      const { data: existingProfile } = await supabase
+      // Verificar si ya existe un perfil con este email
+      console.log(`🔍 Verificando si existe perfil para: ${email}`);
+      const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
         .select('*')
         .eq('email', email)
-        .single();
+        .maybeSingle();
+
+      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+        console.error('❌ Error verificando perfil existente:', profileCheckError);
+        throw profileCheckError;
+      }
 
       if (existingProfile) {
         console.log(`⚠️ Ya existe perfil para: ${email}`, existingProfile);
@@ -87,6 +92,8 @@ export function useAgents() {
 
       // Intentar enviar invitación usando Supabase nativo
       let invitationSent = false;
+      let invitationMessage = '';
+
       try {
         console.log(`📧 Enviando invitación nativa de Supabase a: ${email}`);
         const { data: inviteData, error: inviteError } = await supabase.functions.invoke('send-user-invitation', {
@@ -103,12 +110,22 @@ export function useAgents() {
           throw inviteError;
         }
 
-        console.log(`✅ Invitación enviada exitosamente a: ${email}`, inviteData);
-        invitationSent = true;
+        if (!inviteData.success) {
+          if (inviteData.error === 'Usuario ya registrado') {
+            invitationMessage = `El usuario ${email} ya está registrado pero se creó el perfil local`;
+            invitationSent = false;
+          } else {
+            throw new Error(inviteData.error);
+          }
+        } else {
+          console.log(`✅ Invitación enviada exitosamente a: ${email}`, inviteData);
+          invitationSent = true;
+        }
 
       } catch (inviteError: any) {
         console.error('💥 Error enviando invitación:', inviteError);
         invitationSent = false;
+        invitationMessage = `No se pudo enviar la invitación: ${inviteError.message}`;
       }
 
       // Mostrar mensaje apropiado según si la invitación se envió o no
@@ -120,7 +137,7 @@ export function useAgents() {
       } else {
         toast({
           title: "Agente creado con advertencia",
-          description: `El agente ${name} fue creado pero no se pudo enviar la invitación. El agente puede iniciar sesión directamente con ${email}.`,
+          description: invitationMessage || `El agente ${name} fue creado pero no se pudo enviar la invitación.`,
           variant: "destructive",
         });
       }
@@ -206,12 +223,24 @@ export function useAgents() {
         throw inviteError;
       }
 
-      toast({
-        title: "Invitación reenviada",
-        description: `Se ha reenviado la invitación a ${email}`,
-      });
+      if (!inviteData.success) {
+        if (inviteData.error === 'Usuario ya registrado') {
+          toast({
+            title: "Usuario ya registrado",
+            description: `El usuario ${email} ya está registrado en el sistema`,
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(inviteData.error);
+        }
+      } else {
+        toast({
+          title: "Invitación reenviada",
+          description: `Se ha reenviado la invitación a ${email}`,
+        });
+      }
 
-      return { success: true };
+      return { success: inviteData.success };
     } catch (error: any) {
       console.error('💥 Error:', error);
       toast({
