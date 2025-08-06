@@ -136,6 +136,16 @@ export function ChatWindow({
                 Tomar conversación
               </Button>
             )}
+
+            {conversation.status === 'pending_human' && !conversation.assigned_agent_id && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAssignAgent(conversation.id, currentUser.id)}
+              >
+                Tomar conversación
+              </Button>
+            )}
             
             {conversation.status === 'active_human' && conversation.assigned_agent_id === currentUser.id && (
               <Button
@@ -160,25 +170,27 @@ export function ChatWindow({
               </Button>
             )}
 
-            {/* Agent Assignment */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Asignar a:</span>
-              <Select
-                value={conversation.assigned_agent_id || ''}
-                onValueChange={(value) => onAssignAgent(conversation.id, value)}
-              >
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Seleccionar agente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {agents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name} ({agent.role})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Agent Assignment - Solo para admins */}
+            {currentUser.role === 'admin' && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Asignar a:</span>
+                <Select
+                  value={conversation.assigned_agent_id || ''}
+                  onValueChange={(value) => onAssignAgent(conversation.id, value)}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Seleccionar agente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name} ({agent.role})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </CardHeader>
       </Card>
