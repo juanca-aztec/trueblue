@@ -12,6 +12,7 @@ import { ConversationWithMessages, Profile, ConversationStatus } from '@/types/d
 import { Send, User, Bot, MessageSquare } from 'lucide-react';
 import { MessageTemplatesSuggestions } from '@/components/MessageTemplatesSuggestions';
 import { MessageTemplate } from '@/hooks/useMessageTemplates';
+import { sortMessagesChronologically } from '@/utils/conversationUtils';
 
 interface ChatWindowProps {
   conversation: ConversationWithMessages;
@@ -95,9 +96,7 @@ export function ChatWindow({
   };
 
   // Ordenar mensajes cronológicamente (más antiguos primero, más recientes al final)
-  const sortedMessages = [...conversation.messages].sort((a, b) => 
-    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  );
+  const sortedMessages = sortMessagesChronologically(conversation.messages);
 
   return (
     <div className="flex flex-col h-full">
@@ -111,7 +110,12 @@ export function ChatWindow({
             <div className="flex items-center gap-2">
               <Select
                 value={conversation.status}
-                onValueChange={(value: ConversationStatus) => onUpdateStatus(conversation.id, value)}
+                onValueChange={(value: ConversationStatus) => {
+                  if (value === 'active_human' && !conversation.assigned_agent_id) {
+                    onAssignAgent(conversation.id, currentUser.id);
+                  }
+                  onUpdateStatus(conversation.id, value);
+                }}
               >
                 <SelectTrigger className="w-40">
                   <SelectValue />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -8,7 +8,7 @@ export function useAgents() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchAgents = async () => {
+  const fetchAgents = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -27,7 +27,28 @@ export function useAgents() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  // Función para actualizar el estado local inmediatamente
+  const updateLocalAgent = useCallback((agentId: string, updates: Partial<Profile>) => {
+    setAgents(prevAgents => 
+      prevAgents.map(agent => 
+        agent.id === agentId 
+          ? { ...agent, ...updates }
+          : agent
+      )
+    );
+  }, []);
+
+  // Función para agregar un agente localmente
+  const addLocalAgent = useCallback((agent: Profile) => {
+    setAgents(prevAgents => [agent, ...prevAgents]);
+  }, []);
+
+  // Función para eliminar un agente localmente
+  const removeLocalAgent = useCallback((agentId: string) => {
+    setAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId));
+  }, []);
 
   const createAgent = async (email: string, name: string, role: 'admin' | 'agent' = 'agent') => {
     try {
@@ -97,45 +118,41 @@ export function useAgents() {
       
       console.log(`✅ Perfil pendiente creado para: ${email}`, profileData);
 
-      // Enviar invitación
-      console.log(`📧 Enviando invitación a: ${email}`);
-      const { data: inviteData, error: inviteError } = await supabase.functions.invoke('send-user-invitation', {
-        body: {
-          email: email,
-          name: name,
-          role: role,
-          invitedBy: user.user_metadata?.name || user.email || 'Admin'
-        }
-      });
+      // NO agregar agente localmente aquí - la suscripción en tiempo real lo hará
+      // addLocalAgent(profileData); // ❌ REMOVIDO para evitar duplicación
 
-      if (inviteError) {
-        console.error('❌ Error en función de invitación:', inviteError);
+      // Enviar invitación automáticamente mediante Edge Function
+      console.log(`📧 Enviando invitación automáticamente a: ${email}`);
+      try {
+        const { data: inviteData, error: inviteError } = await supabase.functions.invoke('send-user-invitation', {
+          body: {
+            email,
+            name,
+            role,
+            invitedBy: (user as any)?.id || user.email
+          }
+        });
+
+        if (inviteError) {
+          throw inviteError;
+        }
+
+        console.log('✅ Invitación enviada automáticamente:', inviteData);
+        toast({
+          title: "Agente creado e invitación enviada",
+          description: `Se envió automáticamente la invitación a ${email}.`,
+        });
+
+      } catch (inviteError: any) {
+        console.error('❌ Error enviando invitación automáticamente:', inviteError);
         // Aún con error de invitación, el perfil ya se creó
         toast({
           title: "Agente creado con advertencia",
-          description: `El agente ${name} fue creado pero no se pudo enviar la invitación: ${inviteError.message}`,
+          description: `El agente ${name} fue creado pero no se pudo enviar la invitación automáticamente: ${inviteError?.message || 'Error desconocido'}`,
           variant: "destructive",
-        });
-      } else if (!inviteData.success && !inviteData.warning) {
-        console.error('❌ Error en invitación:', inviteData.error);
-        toast({
-          title: "Agente creado con advertencia", 
-          description: `El agente ${name} fue creado pero hubo un problema con la invitación: ${inviteData.error}`,
-          variant: "destructive",
-        });
-      } else {
-        // Éxito total o con advertencia manejable
-        const message = inviteData.warning ? 
-          `El agente ${name} ha sido creado. ${inviteData.message || inviteData.warning}` :
-          `El agente ${name} ha sido creado y se ha enviado la invitación a ${email}`;
-          
-        toast({
-          title: "Agente creado exitosamente",
-          description: message,
         });
       }
 
-      await fetchAgents();
       return { success: true, data: profileData };
 
     } catch (error: any) {
@@ -162,7 +179,8 @@ export function useAgents() {
 
       if (error) throw error;
 
-      await fetchAgents();
+      // Eliminar agente localmente inmediatamente
+      removeLocalAgent(id);
       
       toast({
         title: "Agente eliminado",
@@ -203,30 +221,44 @@ export function useAgents() {
 
       console.log(`🔄 [${new Date().toISOString()}] Reenviando invitación a: ${email}`);
 
-      const { data: inviteData, error: inviteError } = await supabase.functions.invoke('send-user-invitation', {
-        body: {
-          email: agent.email,
-          name: agent.name,
-          role: agent.role,
-          invitedBy: user.user_metadata?.name || user.email || 'Admin'
+      try {
+        // Actualizar el perfil para indicar que se reenvió la invitación
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            updated_at: new Date().toISOString(),
+            status: 'pending' // Asegurar que esté en estado pendiente
+          })
+          .eq('id', agent.id);
+
+        if (updateError) {
+          throw updateError;
         }
-      });
 
-      if (inviteError) {
-        throw inviteError;
-      }
+        // Invocar Edge Function para enviar la invitación automáticamente
+        const { data: inviteData, error: inviteError } = await supabase.functions.invoke('send-user-invitation', {
+          body: {
+            email,
+            name: agent.name,
+            role: agent.role,
+            invitedBy: (user as any)?.id || user.email
+          }
+        });
 
-      if (!inviteData.success && !inviteData.warning) {
-        throw new Error(inviteData.error);
-      } else {
-        const message = inviteData.warning ? 
-          `${inviteData.message || inviteData.warning}` :
-          `Se ha reenviado la invitación a ${email}`;
-          
+        if (inviteError) {
+          throw inviteError;
+        }
+
+        console.log('✅ Invitación reenviada y enviada automáticamente:', inviteData);
+        
         toast({
           title: "Invitación reenviada",
-          description: message,
+          description: `Se ha enviado la invitación a ${email} por email automáticamente.`,
         });
+
+      } catch (inviteError: any) {
+        console.error('❌ Error reenviando invitación:', inviteError);
+        throw new Error(`Error reenviando invitación: ${inviteError?.message || 'Error desconocido'}`);
       }
 
       return { success: true };
@@ -252,7 +284,8 @@ export function useAgents() {
 
       if (error) throw error;
 
-      await fetchAgents();
+      // Actualizar agente localmente inmediatamente
+      updateLocalAgent(id, updates);
       
       toast({
         title: "Agente actualizado",
@@ -276,9 +309,57 @@ export function useAgents() {
     return updateAgent(id, { status: newStatus });
   };
 
+  // Set up real-time subscriptions
   useEffect(() => {
+    console.log('🔄 Setting up real-time subscriptions for agents...');
+    
+    // Fetch initial data
     fetchAgents();
-  }, []);
+
+    // Create unique channel name
+    const agentChannelName = `agents-${Date.now()}`;
+
+    // Subscribe to profile changes
+    const agentChannel = supabase
+      .channel(agentChannelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          console.log('🔄 Agent change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            console.log('➕ Nuevo agente creado');
+            const newAgent = payload.new as Profile;
+            addLocalAgent(newAgent);
+          } else if (payload.eventType === 'UPDATE') {
+            console.log('✏️ Agente actualizado');
+            const updatedAgent = payload.new as Profile;
+            updateLocalAgent(updatedAgent.id, updatedAgent);
+          } else if (payload.eventType === 'DELETE') {
+            console.log('🗑️ Agente eliminado');
+            const deletedAgent = payload.old as Profile;
+            removeLocalAgent(deletedAgent.id);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Agent channel subscription status:', status);
+      });
+
+    console.log('✅ Real-time subscriptions set up successfully for agents', {
+      agentChannel: agentChannelName
+    });
+
+    return () => {
+      console.log('🧹 Cleaning up real-time subscriptions for agents...');
+      supabase.removeChannel(agentChannel);
+    };
+  }, [fetchAgents, addLocalAgent, updateLocalAgent, removeLocalAgent]);
 
   return {
     agents,

@@ -13,7 +13,7 @@ import Settings from "./pages/Settings";
 import Placeholder from "./pages/Placeholder";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import { BarChart3, Settings as SettingsIcon } from "lucide-react";
+import { BarChart3, Settings as SettingsIcon, Bug } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const queryClient = new QueryClient();

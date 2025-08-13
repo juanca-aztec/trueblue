@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ConversationWithMessages } from '@/types/database';
 import { MessageSquare, User, Clock, Phone } from 'lucide-react';
-import { hasUnreadUserMessages } from '@/utils/conversationUtils';
+import { hasUnreadUserMessages, getLastMessageText, getUnreadMessageCount } from '@/utils/conversationUtils';
 
 interface ConversationListProps {
   conversations: ConversationWithMessages[];
@@ -48,18 +48,12 @@ export function ConversationList({
     }
   };
 
-  const getLastMessage = (messages: any[]) => {
-    if (messages.length === 0) return 'Sin mensajes';
-    const lastMessage = messages[messages.length - 1];
-    return lastMessage.content.length > 50 
-      ? `${lastMessage.content.substring(0, 50)}...` 
-      : lastMessage.content;
-  };
-
   return (
     <div className="space-y-3">
       {conversations.map((conversation) => {
         const hasUnread = hasUnreadUserMessages(conversation);
+        const unreadCount = getUnreadMessageCount(conversation);
+        const lastMessageText = getLastMessageText(conversation.messages);
         
         return (
           <Card
@@ -100,7 +94,7 @@ export function ConversationList({
               )}
               
               <div className={`text-sm mb-2 ${hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                {getLastMessage(conversation.messages)}
+                {lastMessageText}
               </div>
               
               <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -109,7 +103,7 @@ export function ConversationList({
                   <span>{conversation.messages.length} mensajes</span>
                   {hasUnread && (
                     <span className="text-red-500 font-medium ml-1">
-                      • Sin responder
+                      • {unreadCount > 0 ? `${unreadCount} sin responder` : 'Sin responder'}
                     </span>
                   )}
                 </div>

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ConversationWithMessages, Message, ConversationStatus } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { sendTelegramMessage } from '@/config/telegram';
 
 export function useConversations() {
   const [conversations, setConversations] = useState<ConversationWithMessages[]>([]);
@@ -10,7 +11,7 @@ export function useConversations() {
   const { toast } = useToast();
   const { profile } = useAuth();
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       console.log('🚀 fetchConversations iniciado');
       console.log('👤 Profile actual:', profile);
@@ -110,9 +111,11 @@ export function useConversations() {
 
       // Build consolidated conversations with all messages for each user
       const conversationsWithMessages = Array.from(conversationsByUser.entries()).map(([userId, conversation]) => {
-        const allUserMessages = messagesByUser.get(userId) || [];
+        const allUserMessages = messagesByConversation.get(conversation.id) || [];
         
         // Sort all messages by created_at to ensure proper chronological order
+        // Para el chat: más antiguos primero (ascending)
+        // Para la lista: el último mensaje será el más reciente
         const sortedMessages = allUserMessages.sort((a, b) => 
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
@@ -141,7 +144,34 @@ export function useConversations() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile, toast]);
+
+  // Función para actualizar el estado local inmediatamente
+  const updateLocalConversation = useCallback((conversationId: string, updates: Partial<ConversationWithMessages>) => {
+    setConversations(prevConversations => 
+      prevConversations.map(conv => 
+        conv.id === conversationId 
+          ? { ...conv, ...updates, updated_at: new Date().toISOString() }
+          : conv
+      )
+    );
+  }, []);
+
+  // Función para agregar un mensaje localmente
+  const addLocalMessage = useCallback((conversationId: string, message: Message) => {
+    setConversations(prevConversations => 
+      prevConversations.map(conv => {
+        if (conv.id === conversationId) {
+          return {
+            ...conv,
+            messages: [...conv.messages, message],
+            updated_at: new Date().toISOString()
+          };
+        }
+        return conv;
+      })
+    );
+  }, []);
 
   const sendMessage = async (conversationId: string, content: string, agentId: string) => {
     try {
@@ -151,57 +181,63 @@ export function useConversations() {
         throw new Error('Conversación no encontrada');
       }
 
-      // Insert message in database
-      const { error } = await supabase
+      // Insert message in database first
+      const { data: insertedMessage, error } = await supabase
         .from('tb_messages')
         .insert({
           conversation_id: conversationId,
           content,
           sender_role: 'agent' as const,
-          responded_by_agent_id: agentId
-        });
+          responded_by_agent_id: agentId,
+          agent_email: profile?.email || null,
+          agent_name: profile?.name || null
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
       // Auto-asignar la conversación al agente si no está asignada
       let updateData: any = { 
-        status: 'active_human' as ConversationStatus,
+        status: 'active_human' as ConversationStatus, // ✅ Reactivado: cambiar a active_human
         updated_at: new Date().toISOString()
       };
 
       if (!conversation.assigned_agent_id) {
         console.log('🔧 Auto-asignando conversación al agente:', agentId);
         updateData.assigned_agent_id = agentId;
+        updateData.assigned_agent_email = profile?.email || null;
+        updateData.assigned_agent_name = profile?.name || null;
       }
 
       // Update conversation status to active_human and assign agent if needed
-      await supabase
+      const { error: updateError } = await supabase
         .from('tb_conversations')
         .update(updateData)
         .eq('id', conversationId);
 
+      if (updateError) throw updateError;
+
+      // Actualizar estado local inmediatamente
+      updateLocalConversation(conversationId, {
+        status: 'active_human', // ✅ Reactivado: cambiar a active_human
+        assigned_agent_id: updateData.assigned_agent_id || conversation.assigned_agent_id,
+        assigned_agent_email: updateData.assigned_agent_email,
+        assigned_agent_name: updateData.assigned_agent_name
+      });
+
       // Send message to Telegram
       try {
-        const telegramResponse = await fetch('https://xmxmygsaogvbiemuzarm.supabase.co/functions/v1/send-telegram-message', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            chatId: conversation.user_id, // Using user_id as Telegram chat ID
-            message: content,
-            conversationId: conversationId
-          }),
-        });
-
-        const telegramResult = await telegramResponse.json();
+        // Enviar mensaje directamente al bot de Telegram
+        const telegramResponse = await sendTelegramMessage(conversation.user_id, content);
         
-        if (!telegramResult.success) {
-          console.warn('Failed to send message to Telegram:', telegramResult.error);
+        if (telegramResponse.ok) {
+          console.log('✅ Mensaje enviado a Telegram exitosamente:', telegramResponse.result);
+        } else {
+          console.warn('Failed to send message to Telegram:', telegramResponse);
           toast({
             title: "Mensaje enviado",
-            description: "Mensaje guardado pero no se pudo enviar por Telegram",
+            description: `Mensaje guardado pero no se pudo enviar por Telegram: ${telegramResponse.description || 'Error desconocido'}`,
             variant: "destructive",
           });
           return;
@@ -244,6 +280,8 @@ export function useConversations() {
         
         if (aiAgent) {
           updateData.assigned_agent_id = aiAgent.id;
+          updateData.assigned_agent_email = aiAgent.email;
+          updateData.assigned_agent_name = aiAgent.name;
         }
       }
 
@@ -255,24 +293,14 @@ export function useConversations() {
       if (error) throw error;
 
       // Immediately update local state for better UX
-      setConversations(prevConversations => 
-        prevConversations.map(conv => {
-          if (conv.id === conversationId) {
-            const updatedConv = { ...conv, status, updated_at: new Date().toISOString() };
-            
-            // Si asignamos el agente AI, también actualizar el assigned_agent
-            if (status === 'active_ai' && updateData.assigned_agent_id) {
-              updatedConv.assigned_agent_id = updateData.assigned_agent_id;
-              // Buscar el agente en las conversaciones existentes para obtener su información
-              const aiAgentFromConversations = prevConversations.find(c => c.assigned_agent?.id === updateData.assigned_agent_id)?.assigned_agent;
-              updatedConv.assigned_agent = aiAgentFromConversations || null;
-            }
-            
-            return updatedConv;
-          }
-          return conv;
-        })
-      );
+      updateLocalConversation(conversationId, {
+        status,
+        ...(status === 'active_ai' && updateData.assigned_agent_id ? {
+          assigned_agent_id: updateData.assigned_agent_id,
+          assigned_agent_email: updateData.assigned_agent_email,
+          assigned_agent_name: updateData.assigned_agent_name
+        } : {})
+      });
 
       toast({
         title: "Estado actualizado",
@@ -304,6 +332,8 @@ export function useConversations() {
         .from('tb_conversations')
         .update({ 
           assigned_agent_id: agentId,
+          assigned_agent_email: agentProfile?.email || null,
+          assigned_agent_name: agentProfile?.name || null,
           status: newStatus,
           updated_at: new Date().toISOString()
         })
@@ -312,19 +342,12 @@ export function useConversations() {
       if (error) throw error;
 
       // Immediately update local state for better UX
-      setConversations(prevConversations => 
-        prevConversations.map(conv => 
-          conv.id === conversationId 
-            ? { 
-                ...conv, 
+      updateLocalConversation(conversationId, {
                 assigned_agent_id: agentId,
-                assigned_agent: agentProfile,
-                status: newStatus,
-                updated_at: new Date().toISOString()
-              }
-            : conv
-        )
-      );
+        assigned_agent_email: agentProfile?.email || null,
+        assigned_agent_name: agentProfile?.name || null,
+        status: newStatus
+      });
 
       toast({
         title: "Conversación asignada",
@@ -344,11 +367,14 @@ export function useConversations() {
   useEffect(() => {
     if (!profile) return;
     
+    console.log('🔄 Setting up real-time subscriptions for profile:', profile.id);
+    
+    // Fetch initial data
     fetchConversations();
 
     // Create unique channel names to avoid conflicts
-    const conversationChannelName = `conversations-${Date.now()}`;
-    const messageChannelName = `messages-${Date.now()}`;
+    const conversationChannelName = `conversations-${profile.id}-${Date.now()}`;
+    const messageChannelName = `messages-${profile.id}-${Date.now()}`;
 
     // Subscribe to conversation changes
     const conversationChannel = supabase
@@ -361,14 +387,33 @@ export function useConversations() {
           table: 'tb_conversations'
         },
         (payload) => {
-          console.log('Conversation change detected:', payload);
-          // Update local state immediately for better UX
-          setTimeout(() => {
+          console.log('🔄 Conversation change detected:', payload);
+          
+          // Handle different types of changes
+          if (payload.eventType === 'INSERT') {
+            console.log('➕ Nueva conversación creada');
             fetchConversations();
-          }, 100);
+          } else if (payload.eventType === 'UPDATE') {
+            console.log('✏️ Conversación actualizada');
+            const updatedConversation = payload.new as any;
+            
+            // Update local state immediately
+            setConversations(prevConversations => 
+              prevConversations.map(conv => 
+                conv.id === updatedConversation.id 
+                  ? { ...conv, ...updatedConversation }
+                  : conv
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            console.log('🗑️ Conversación eliminada');
+            fetchConversations();
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Conversation channel subscription status:', status);
+      });
 
     // Subscribe to message changes
     const messageChannel = supabase
@@ -381,26 +426,49 @@ export function useConversations() {
           table: 'tb_messages'
         },
         (payload) => {
-          console.log('Message change detected:', payload);
-          // Update local state immediately for better UX
-          setTimeout(() => {
+          console.log('🔄 Message change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            console.log('➕ Nuevo mensaje recibido');
+            const newMessage = payload.new as Message;
+            
+            // Add message to local state immediately
+            setConversations(prevConversations => 
+              prevConversations.map(conv => {
+                if (conv.id === newMessage.conversation_id) {
+                  return {
+                    ...conv,
+                    messages: [...conv.messages, newMessage],
+                    updated_at: new Date().toISOString()
+                  };
+                }
+                return conv;
+              })
+            );
+          } else if (payload.eventType === 'UPDATE') {
+            console.log('✏️ Mensaje actualizado');
             fetchConversations();
-          }, 100);
+          } else if (payload.eventType === 'DELETE') {
+            console.log('🗑️ Mensaje eliminado');
+            fetchConversations();
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Message channel subscription status:', status);
+      });
 
-    console.log('Setting up realtime subscriptions...', {
+    console.log('✅ Real-time subscriptions set up successfully', {
       conversationChannel: conversationChannelName,
       messageChannel: messageChannelName
     });
 
     return () => {
-      console.log('Cleaning up realtime subscriptions...');
+      console.log('🧹 Cleaning up real-time subscriptions...');
       supabase.removeChannel(conversationChannel);
       supabase.removeChannel(messageChannel);
     };
-  }, [profile]);
+  }, [profile, fetchConversations]);
 
   return {
     conversations,
