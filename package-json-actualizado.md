@@ -1,3 +1,10 @@
+# 📦 Package.json Actualizado - Scripts de Entorno
+
+## 🔧 Scripts a Agregar
+
+Reemplaza la sección `"scripts"` de tu `package.json` con esto:
+
+```json
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
@@ -10,26 +17,32 @@
     "lint": "eslint .",
     "preview": "vite preview",
     
+    // ===== NUEVOS SCRIPTS DE ENTORNO =====
     "env:local": "node scripts/setup-env.js local",
     "env:staging": "node scripts/setup-env.js staging",
     "env:production": "node scripts/setup-env.js production",
     "env:auto": "node scripts/setup-env.js",
-    "env:check": "type .env | findstr VITE_",
+    "env:check": "cat .env | grep VITE_",
     
+    // ===== SCRIPTS DE DESARROLLO =====
     "dev:local": "npm run env:local && npm run dev",
     "dev:staging": "npm run env:staging && npm run dev",
     "dev:production": "npm run env:production && npm run dev",
     
+    // ===== SCRIPTS DE BUILD =====
     "build:staging": "npm run env:staging && npm run build",
     "build:production": "npm run env:production && npm run build",
     
+    // ===== SCRIPTS DE SUPABASE =====
     "supabase:local": "npm run env:local && supabase status",
     "supabase:staging": "npm run env:staging && supabase status",
     "supabase:production": "npm run env:production && supabase status",
     
+    // ===== SCRIPTS DE DESPLIEGUE =====
     "deploy:staging": "npm run build:staging",
     "deploy:production": "npm run build:production",
     
+    // ===== SCRIPTS DE VERIFICACIÓN =====
     "check:env": "node -e \"console.log('Entorno actual:', process.env.VITE_ENVIRONMENT || 'No configurado')\"",
     "check:db": "node -e \"console.log('BD URL:', process.env.VITE_SUPABASE_URL || 'No configurado')\""
   },
@@ -105,3 +118,50 @@
     "vite": "^5.4.1"
   }
 }
+```
+
+## 🚀 Cómo aplicar esta actualización:
+
+### **PASO 1: Actualizar package.json**
+1. Abre tu `package.json`
+2. Reemplaza la sección `"scripts"` con la nueva
+3. Guarda el archivo
+
+### **PASO 2: Verificar instalación**
+```bash
+npm install
+```
+
+### **PASO 3: Probar scripts**
+```bash
+# Verificar que funciona
+npm run env:local
+
+# Verificar entorno
+npm run check:env
+```
+
+## 📋 Scripts disponibles después de la actualización:
+
+### **Configuración de entornos:**
+- `npm run env:local` - Configurar entorno local
+- `npm run env:staging` - Configurar entorno staging
+- `npm run env:production` - Configurar entorno producción
+- `npm run env:auto` - Configuración automática
+
+### **Desarrollo:**
+- `npm run dev:local` - Desarrollar en local
+- `npm run dev:staging` - Desarrollar en staging
+- `npm run dev:production` - Desarrollar en producción
+
+### **Build:**
+- `npm run build:staging` - Build para staging
+- `npm run build:production` - Build para producción
+
+### **Verificación:**
+- `npm run check:env` - Verificar entorno actual
+- `npm run check:db` - Verificar configuración de BD
+- `npm run env:check` - Ver todas las variables
+
+---
+**Después de esta actualización**, podrás usar comandos como `npm run dev:local` para configurar automáticamente el entorno y ejecutar la aplicación.
