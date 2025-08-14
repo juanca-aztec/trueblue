@@ -21,7 +21,7 @@ export default function Auth() {
   // Redirect authenticated users
   useEffect(() => {
     if (user) {
-      window.location.href = 'https://trueblu.azteclab.co/';
+      window.location.href = `${window.location.origin}/`;
     }
   }, [user]);
 
