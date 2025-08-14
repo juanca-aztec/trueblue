@@ -1,73 +1,149 @@
-# Welcome to your Lovable project
+# TrueBlue Chat Management
 
-## Project info
+Sistema de gestión de chat integrado con Supabase y n8n para automatización de workflows.
 
-**URL**: https://lovable.dev/projects/99a96aa0-fcd1-4693-9346-9b678ffa6744
+## 🚀 Características
 
-## How can I edit this code?
+- **Chat en tiempo real** con Supabase Realtime
+- **Autenticación** integrada con Supabase Auth
+- **Automatización** de workflows con n8n
+- **Interfaz moderna** construida con React + TypeScript + Tailwind CSS
+- **Despliegue automático** con Vercel
+- **Entornos separados** para staging y producción
 
-There are several ways of editing your application.
+## 🏗️ Arquitectura
 
-**Use Lovable**
+- **Frontend**: React + TypeScript + Vite
+- **Backend**: Supabase (PostgreSQL + Auth + Realtime)
+- **Automatización**: n8n workflows
+- **Despliegue**: Vercel
+- **CI/CD**: GitHub + Vercel automático
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/99a96aa0-fcd1-4693-9346-9b678ffa6744) and start prompting.
+## 📋 Requisitos Previos
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js 18+
+- npm o yarn
+- Cuenta en Supabase
+- Cuenta en n8n
+- Cuenta en Vercel
+- Cuenta en GitHub
 
-**Use your preferred IDE**
+## 🚀 Inicio Rápido
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 1. Clonar el Repositorio
+```bash
+git clone https://github.com/tu-usuario/trueblue-chat-management.git
+cd trueblue-chat-management
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 2. Instalar Dependencias
+```bash
+npm install
+```
 
-Follow these steps:
+### 3. Configurar Variables de Entorno
+Crea un archivo `.env.local`:
+```bash
+VITE_SUPABASE_URL=https://tu-proyecto-dev.supabase.co
+VITE_SUPABASE_ANON_KEY=tu_anon_key_dev
+VITE_APP_ENV=development
+VITE_ENVIRONMENT=DEVELOPMENT
+VITE_N8N_WEBHOOK_URL=https://tu-webhook-dev.n8n.cloud/webhook/tu-id
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 4. Ejecutar en Desarrollo
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+La aplicación estará disponible en: `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🔄 Flujo de Trabajo del Equipo
 
-**Use GitHub Codespaces**
+### Estructura de Ramas
+- **`main`**: Rama principal para producción
+- **`staging`**: Rama para testing y staging
+- **`feature/*`**: Ramas para nuevas funcionalidades
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Flujo de Desarrollo
+1. **Desarrollo**: Crear rama desde `staging`
+2. **Testing**: Merge a `staging` y testing en staging
+3. **Producción**: Solo después de testing exitoso, merge a `main`
 
-## What technologies are used for this project?
+### Comandos Útiles
+```bash
+# Ver estado actual
+git status
+git branch -a
 
-This project is built with:
+# Cambiar entre ramas
+git checkout staging
+git checkout main
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Sincronizar con remoto
+git pull origin staging
+git pull origin main
+```
 
-## How can I deploy this project?
+## 🚀 Despliegue
 
-Simply open [Lovable](https://lovable.dev/projects/99a96aa0-fcd1-4693-9346-9b678ffa6744) and click on Share -> Publish.
+### Entornos
+- **Staging**: Despliega automáticamente desde rama `staging`
+- **Producción**: Despliega automáticamente desde rama `main`
 
-## Can I connect a custom domain to my Lovable project?
+### Variables de Entorno
+- **Staging**: Configuradas en Vercel para Preview
+- **Producción**: Configuradas en Vercel para Production
 
-Yes, you can!
+## 📚 Documentación
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- [Configuración de Desarrollo](./DEVELOPMENT_SETUP.md)
+- [Configuración de Producción](./PRODUCTION_SETUP.md)
+- [Configuración de Vercel](./VERCEL_SETUP.md)
+- [Configuración de GitHub](./GITHUB_SETUP.md)
+- [Flujo de Trabajo](./WORKFLOW_SETUP.md)
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 🛠️ Scripts Disponibles
+
+```bash
+# Desarrollo
+npm run dev          # Servidor de desarrollo
+npm run build        # Build de producción
+npm run preview      # Preview del build
+npm run lint         # Linting del código
+npm run type-check   # Verificación de tipos
+```
+
+## 🔒 Seguridad
+
+- ✅ Variables de entorno protegidas
+- ✅ Solo `anon_key` de Supabase (nunca `service_role`)
+- ✅ Políticas RLS configuradas
+- ✅ CORS configurado correctamente
+- ✅ Protección de ramas en GitHub
+
+## 🤝 Contribución
+
+1. Fork el repositorio
+2. Crea una rama feature: `git checkout -b feature/nueva-funcionalidad`
+3. Haz commit de tus cambios: `git commit -m 'feat: nueva funcionalidad'`
+4. Push a la rama: `git push origin feature/nueva-funcionalidad`
+5. Abre un Pull Request
+
+## 📝 Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+## 🆘 Soporte
+
+Para soporte técnico o preguntas:
+- Crear un Issue en GitHub
+- Contactar al equipo de desarrollo
+- Revisar la documentación del proyecto
+
+## 🔄 Estado del Proyecto
+
+- **Versión**: 1.1.0
+- **Estado**: En desarrollo activo
+- **Última actualización**: 2025-01-14
+- **Próxima versión**: 1.2.0

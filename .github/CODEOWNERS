@@ -1,0 +1,25 @@
+# Code owners for the entire repository
+* @tu-usuario-github
+
+# Frontend components and UI
+/src/components/ @desarrollador-frontend
+/src/pages/ @desarrollador-frontend
+/src/hooks/ @desarrollador-frontend
+/src/types/ @desarrollador-frontend
+
+# Utilities and services
+/src/utils/ @desarrollador-backend
+/src/services/ @desarrollador-backend
+/src/lib/ @desarrollador-backend
+
+# Database and Supabase configuration
+/supabase/ @admin-database
+/src/database/ @admin-database
+
+# Configuration files
+vite.config.ts @desarrollador-frontend
+tailwind.config.ts @desarrollador-frontend
+tsconfig*.json @desarrollador-frontend
+
+# Documentation
+*.md @tech-writer
