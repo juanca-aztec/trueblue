@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { ConversationWithMessages, Message, ConversationStatus } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { sendTelegramMessage } from '@/config/telegram';
 
 export function useConversations() {
   const [conversations, setConversations] = useState<ConversationWithMessages[]>([]);
@@ -226,27 +225,38 @@ export function useConversations() {
         assigned_agent_name: updateData.assigned_agent_name
       });
 
-      // Send message to Telegram
+      // Send message to n8n webhook instead of Telegram
       try {
-        // Enviar mensaje directamente al bot de Telegram
-        const telegramResponse = await sendTelegramMessage(conversation.user_id, content);
-        
-        if (telegramResponse.ok) {
-          console.log('✅ Mensaje enviado a Telegram exitosamente:', telegramResponse.result);
-        } else {
-          console.warn('Failed to send message to Telegram:', telegramResponse);
-          toast({
-            title: "Mensaje enviado",
-            description: `Mensaje guardado pero no se pudo enviar por Telegram: ${telegramResponse.description || 'Error desconocido'}`,
-            variant: "destructive",
-          });
-          return;
+        // Obtener el canal de la conversación
+        const { data: conversationData } = await supabase
+          .from('tb_conversations')
+          .select('channel')
+          .eq('id', conversationId)
+          .single();
+
+        const channel = conversationData?.channel || 'telegram';
+
+        // Enviar mensaje a n8n webhook
+        const { data: n8nData, error: n8nError } = await supabase.functions.invoke('send-to-n8n', {
+          body: {
+            conversationId,
+            message: content,
+            channel,
+            senderId: profile.id,
+            chatId: conversation.user_id
+          }
+        });
+
+        if (n8nError) {
+          throw n8nError;
         }
-      } catch (telegramError) {
-        console.warn('Telegram integration error:', telegramError);
+
+        console.log('✅ Mensaje enviado a n8n webhook exitosamente:', n8nData);
+      } catch (n8nError: any) {
+        console.warn('n8n webhook integration error:', n8nError);
         toast({
           title: "Mensaje enviado",
-          description: "Mensaje guardado pero no se pudo enviar por Telegram",
+          description: "Mensaje guardado pero no se pudo enviar por n8n webhook",
           variant: "destructive",
         });
         return;
@@ -254,7 +264,7 @@ export function useConversations() {
 
       toast({
         title: "Mensaje enviado",
-        description: "El mensaje se envió correctamente a la base de datos y Telegram",
+        description: "El mensaje se envió correctamente a la base de datos y n8n webhook",
       });
     } catch (error) {
       console.error('Error sending message:', error);
