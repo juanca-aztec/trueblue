@@ -32,7 +32,8 @@
     
     "check:env": "node -e \"console.log('Entorno actual:', process.env.VITE_ENVIRONMENT || 'No configurado')\"",
     "check:db": "node -e \"console.log('BD URL:', process.env.VITE_SUPABASE_URL || 'No configurado')\"",
-    "verificar:staging": "node verificar-staging.js"
+    "verificar:staging": "node verificar-staging.js",
+    "install:vercel": "npm install --legacy-peer-deps"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -68,7 +69,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
-    "date-fns": "^4.1.0",
+    "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
