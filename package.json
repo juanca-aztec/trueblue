@@ -31,7 +31,8 @@
     "deploy:production": "npm run build:production",
     
     "check:env": "node -e \"console.log('Entorno actual:', process.env.VITE_ENVIRONMENT || 'No configurado')\"",
-    "check:db": "node -e \"console.log('BD URL:', process.env.VITE_SUPABASE_URL || 'No configurado')\""
+    "check:db": "node -e \"console.log('BD URL:', process.env.VITE_SUPABASE_URL || 'No configurado')\"",
+    "verificar:staging": "node verificar-staging.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

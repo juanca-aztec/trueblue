@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_SUPABASE_URL": "https://xmxmygsaogvbiemuzarm.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhteG15Z3Nhb2d2YmllbXV6YXJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4MDY1MzEsImV4cCI6MjA2OTM4MjUzMX0.V_vK9YiY01U2EwqS7Aw57NeR64T36IQaPr7Z1sdT_Pg",
+    "VITE_APP_ENV": "staging",
+    "VITE_ENVIRONMENT": "STAGING",
+    "VITE_N8N_WEBHOOK_URL": "https://aztec.app.n8n.cloud/webhook/47e8e9ed-a639-4853-b8a5-e24cb5aff9c1"
+  }
+}
