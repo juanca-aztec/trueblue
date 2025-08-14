@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithMagicLink = async (email: string) => {
-    const redirectUrl = `https://trueblue.azteclab.co/auth`;
+    const redirectUrl = `${window.location.origin}/auth`;
     
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -124,7 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string, invitationToken?: string) => {
     try {
-      const redirectUrl = `https://trueblue.azteclab.co/`;
+      const redirectUrl = `${window.location.origin}/`;
       
       const { error } = await supabase.auth.signUp({
         email,
