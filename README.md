@@ -169,7 +169,7 @@ Para soporte técnico, contacta al equipo de desarrollo.
 
 He encontrado la causa probable del error de bundle. El plugin `lovable-tagger` en tu configuración de Vite puede estar causando conflictos durante el build de producción.
 
-## 🔧 **SOLUCIÓN INMEDIATA:**
+## 🔧 **SOLUCIÓN INMEDIATAA:**
 
 ### **PASO 1: Modificar `vite.config.ts`**
 
