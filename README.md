@@ -149,4 +149,4 @@ Para soporte técnico o preguntas:
 - **Próxima versión**: 1.2.0
 
   ## �� Testing Deployment
-   - Staging deployment test successful
+   - Staging deployment test successful.
