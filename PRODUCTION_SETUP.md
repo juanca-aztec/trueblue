@@ -194,3 +194,4 @@ git push origin staging
 - [ ] Webhooks de n8n staging respondiendo
 - [ ] Testing completo de funcionalidades
 - [ ] Listo para merge a producción
+

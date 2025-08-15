@@ -46,3 +46,4 @@ VITE_N8N_WEBHOOK_URL = https://aztec.app.n8n.cloud/webhook/47e8e9ed-a639-4853-b8
 ---
 **ESTADO**: ❌ **RAM A INCORRECTA EN VERCEL**  
 **SOLUCIÓN**: **CAMBIAR A RAMA `staging`**
+

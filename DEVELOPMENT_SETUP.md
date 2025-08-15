@@ -193,3 +193,4 @@ Crea `.prettierrc`:
 - ✅ Hacer commits regulares y descriptivos
 - ✅ Revisar código antes de merge
 - ✅ Testing obligatorio antes de producción
+

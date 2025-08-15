@@ -116,3 +116,4 @@ Después de configurar:
 2. Intenta hacer push directo a `staging` - debe fallar
 3. Crea un Pull Request - debe requerir aprobación
 4. Verifica que las reglas se apliquen correctamente
+

@@ -67,3 +67,4 @@ Después de cada despliegue, verifica:
 - Si hay problemas de build, revisa los logs en Vercel
 - Si las variables de entorno no se cargan, verifica que estén configuradas correctamente
 - Si hay problemas de CORS, verifica la configuración de Supabase
+

@@ -30,3 +30,4 @@ Describe brevemente los cambios realizados.
 
 ## Breaking Changes
 <!-- Si hay cambios breaking, descríbelos aquí -->
+
