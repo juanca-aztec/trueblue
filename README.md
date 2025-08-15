@@ -164,3 +164,63 @@ Para soporte técnico, contacta al equipo de desarrollo.
 ---
 
 *Última actualización: Variables de entorno verificadas y configuradas en Vercel*
+
+## 🚨 **PROBLEMA IDENTIFICADO: PLUGIN LOVABLE-TAGGER**
+
+He encontrado la causa probable del error de bundle. El plugin `lovable-tagger` en tu configuración de Vite puede estar causando conflictos durante el build de producción.
+
+## 🔧 **SOLUCIÓN INMEDIATA:**
+
+### **PASO 1: Modificar `vite.config.ts`**
+
+Abre el archivo `vite.config.ts` y comenta temporalmente estas líneas:
+
+```typescript
+// import { componentTagger } from "lovable-tagger";
+
+// Y en plugins:
+plugins: [
+  react(),
+  // mode === 'development' &&
+  // componentTagger(),
+].filter(Boolean),
+```
+
+### **PASO 2: Hacer commit del cambio**
+
+```bash
+git add .
+git commit -m "fix: deshabilitar plugin lovable-tagger temporalmente para resolver error de bundle"
+git push origin staging
+```
+
+---
+
+##  **¿POR QUÉ ESTE PLUGIN CAUSA PROBLEMAS?**
+
+1. **Plugin de desarrollo** - Solo debería ejecutarse en `npm run dev`
+2. **Conflictos de build** - Puede interferir con el build de producción
+3. **Dependencias problemáticas** - Puede tener conflictos con Vercel
+
+---
+
+## 🎯 **RESULTADO ESPERADO:**
+
+Después de deshabilitar el plugin:
+- ✅ **Build exitoso** en Vercel
+- ✅ **Sin errores de bundle**
+- ✅ **Despliegue automático** funcionando
+
+---
+
+## ❓ **PREGUNTAS IMPORTANTES:**
+
+1. **¿Puedes modificar el archivo `vite.config.ts`** como te indiqué?
+2. **¿El error aparece en Vercel o en GitHub Actions?**
+3. **¿Puedes ver logs más detallados del error?**
+
+---
+
+**Modifica el archivo `vite.config.ts` comentando el plugin `lovable-tagger`, haz commit y push. Esto debería resolver el error de bundle inmediatamente.**
+
+¡El problema está en el plugin, no en las variables de entorno! 🚀
